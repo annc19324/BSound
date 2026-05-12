@@ -54,9 +54,11 @@ export default function Sidebar() {
 
   return (
     <>
-      <button className="mobile-toggle" onClick={() => setIsOpen(true)}>
-        <Menu size={24} />
-      </button>
+      {!isOpen && (
+        <button className="mobile-toggle" onClick={() => setIsOpen(true)}>
+          <Menu size={24} />
+        </button>
+      )}
 
       {isOpen && <div className="sidebar-backdrop" onClick={() => setIsOpen(false)} />}
 

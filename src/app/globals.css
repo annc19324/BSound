@@ -110,8 +110,8 @@ button {
 
   .player-bar {
     flex-shrink: 0;
-    height: 140px;
-    min-height: 140px;
+    height: 160px;
+    min-height: 160px;
     width: 100%;
     z-index: 500;
   }
@@ -388,31 +388,42 @@ button {
   flex-shrink: 0;
 }
 
+/* Row 3 — mobile only extras (Volume, Shuffle, Repeat, Download) */
+.player-row3-mobile {
+  display: none; /* hidden on desktop */
+}
+
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  /* Make player taller to fit 2 rows */
+  /* Make player taller to fit 3 rows */
   .player-bar {
-    height: 140px;
-    min-height: 140px;
+    height: 160px;
+    min-height: 160px;
   }
 
-  .player-inner { padding: 8px 12px; gap: 6px; }
+  .player-inner { padding: 8px 12px; gap: 4px; }
 
   .player-row1 {
     grid-template-columns: 1fr auto;
     gap: 10px;
   }
 
-  /* Hide desktop-only right column, show mobile controls */
+  /* Hide desktop-only right column */
   .player-right.hide-mobile { display: none !important; }
   .hide-mobile { display: none !important; }
-  .show-mobile { display: flex !important; align-items: center; }
-  .player-vol-mobile { display: flex !important; }
 
-  .player-controls { gap: 16px; }
-  .player-thumb { width: 40px; height: 40px; }
-  .player-title { font-size: 0.82rem; }
+  .player-controls { gap: 14px; }
+  .player-thumb { width: 38px; height: 38px; }
+  .player-title { font-size: 0.8rem; }
   .player-extras { gap: 10px; }
+
+  /* Row 3 visible on mobile */
+  .player-row3-mobile {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-top: 2px;
+  }
 }
 
 @media (max-width: 480px) {
