@@ -25,7 +25,7 @@ export default function Player() {
   };
 
   return (
-    <div className="player-bar" style={{ width: '100%', height: '100%', display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr', gap: '20px', alignItems: 'center', padding: '0 20px' }}>
+    <div className="player-bar player-inner">
       {/* Song Info */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
         <div style={{ width: '56px', height: '56px', background: '#222', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', flexShrink: 0 }}>
@@ -140,12 +140,6 @@ export default function Player() {
         </a>
       </div>
 
-      <style jsx>{`
-        @media (max-width: 768px) {
-          .player-bar { grid-template-columns: 1fr 1fr !important; }
-          .hide-mobile { display: none !important; }
-        }
-      `}</style>
     </div>
   );
 }

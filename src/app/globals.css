@@ -56,8 +56,9 @@ button {
     "sidebar main"
     "player player";
   grid-template-columns: 240px 1fr;
-  grid-template-rows: calc(100vh - 100px) 100px;
+  grid-template-rows: calc(100vh - 90px) 90px;
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
   overflow: hidden;
 }
@@ -73,32 +74,46 @@ button {
 }
 
 @media (max-width: 768px) {
+  /* Switch to full-height flex column: main scrolls, player pins to bottom */
   .app-container {
-    grid-template-areas: 
-      "main"
-      "player";
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr 100px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh; /* dvh accounts for browser chrome on mobile */
+    overflow: hidden;
   }
-  
+
   .sidebar {
     position: fixed;
     top: 0;
     left: -280px;
     width: 280px;
-    height: 100vh;
+    height: 100%;
+    height: 100dvh;
     z-index: 1000;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 20px 0 50px rgba(0,0,0,0.5);
   }
-  
+
   .sidebar.open {
     transform: translateX(280px);
   }
 
   .main-content {
+    flex: 1;
+    min-height: 0;   /* allow shrinking */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 16px;
-    padding-top: 70px; /* Space for mobile toggle */
+    padding-top: 60px; /* space for mobile toggle */
+  }
+
+  .player-bar {
+    flex-shrink: 0;
+    height: 90px;
+    min-height: 90px;
+    width: 100%;
+    z-index: 500;
   }
 
   h1 { font-size: 1.5rem; }
@@ -284,10 +299,29 @@ button {
   z-index: 1100;
 }
 
-@media (max-width: 480px) {
-  .player-bar {
-    padding: 0 8px;
+/* Player inner grid (3 columns on desktop) */
+.player-inner {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr;
+  gap: 20px;
+  align-items: center;
+  padding: 0 20px;
+}
+
+@media (max-width: 768px) {
+  .player-inner {
+    grid-template-columns: auto 1fr;
+    gap: 10px;
+    padding: 0 12px;
   }
+  .hide-mobile { display: none !important; }
+}
+
+@media (max-width: 480px) {
+  .player-bar { padding: 0 8px; }
+  .player-inner { padding: 0 8px; gap: 8px; }
 }
 
 /* Typography */
