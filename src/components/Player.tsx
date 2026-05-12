@@ -135,21 +135,24 @@ export default function Player() {
           </div>
 
           {/* Volume (mobile only) */}
-          <div className="show-mobile" style={{ display: 'none', alignItems: 'center', gap: '6px' }}>
+          <div className="show-mobile player-vol-mobile">
             <Volume2 size={16} />
             <input type="range" min="0" max="2" step="0.01" value={volume}
               onChange={(e) => setVolume(parseFloat(e.target.value))}
-              style={{ width: '70px', accentColor: 'var(--primary)', height: '4px' }}
+              style={{ width: '60px', accentColor: 'var(--primary)', height: '4px' }}
             />
           </div>
 
-          {/* Shuffle + Repeat mobile */}
-          <button onClick={toggleShuffle} className="show-mobile" style={{ display: 'none' }}>
+          {/* Shuffle + Repeat + Download — visible on mobile */}
+          <button onClick={toggleShuffle} className="show-mobile">
             <Shuffle size={16} color={isShuffle ? 'var(--primary)' : 'var(--text-muted)'} />
           </button>
-          <button onClick={toggleRepeat} className="show-mobile" style={{ display: 'none' }}>
+          <button onClick={toggleRepeat} className="show-mobile">
             {repeatMode === 'ONE' ? <Repeat1 size={16} color="var(--primary)" /> : <Repeat size={16} color={repeatMode === 'ALL' ? 'var(--primary)' : 'var(--text-muted)'} />}
           </button>
+          <a href={currentSong.file_url} download className="show-mobile" style={{ opacity: 0.8 }}>
+            <Download size={16} />
+          </a>
         </div>
       </div>
     </div>

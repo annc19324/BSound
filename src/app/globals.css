@@ -406,7 +406,8 @@ button {
   /* Hide desktop-only right column, show mobile controls */
   .player-right.hide-mobile { display: none !important; }
   .hide-mobile { display: none !important; }
-  .show-mobile { display: flex !important; }
+  .show-mobile { display: flex !important; align-items: center; }
+  .player-vol-mobile { display: flex !important; }
 
   .player-controls { gap: 16px; }
   .player-thumb { width: 40px; height: 40px; }
@@ -569,6 +570,10 @@ p { color: var(--text-muted); }
   box-shadow: 0 4px 12px rgba(0,0,0,0.5);
   cursor: pointer;
 }
+
+/* Hidden on desktop, shown on mobile */
+.show-mobile { display: none; }
+.player-vol-mobile { display: none; align-items: center; gap: 6px; }
 
 .mobile-backdrop {
   position: fixed;
