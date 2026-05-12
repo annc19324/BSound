@@ -65,7 +65,7 @@ export default function Sidebar() {
         {/* ── Logo ── */}
         <div className="sb-logo-row">
           <Link href="/" onClick={() => setIsOpen(false)} className="sb-logo-link">
-            <img src="/BSound.png" alt="BSound" className="sb-logo-img" />
+            <img src="/bsound.png" alt="BSound" className="sb-logo-img" />
             <span className="sb-logo-text">BSound</span>
           </Link>
           <button className="mobile-close" onClick={() => setIsOpen(false)}><X size={22} /></button>
