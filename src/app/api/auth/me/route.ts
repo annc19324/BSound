@@ -49,29 +49,8 @@ export async function PATCH(request: Request) {
     const { payload: decoded } = await jwtVerify(token, secret);
     const formData = await request.formData();
     const name = formData.get('name') as string;
-    const image = formData.get('image') as File | null;
 
-    let imageUrl = null;
-    if (image) {
-      const arrayBuffer = await image.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      const uploadResponse: any = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          { folder: 'bsound_avatars' },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        ).end(buffer);
-      });
-      imageUrl = uploadResponse.secure_url;
-    }
-
-    if (imageUrl) {
-      await query('UPDATE users SET name = $1, image_url = $2 WHERE id = $3', [name, imageUrl, decoded.id]);
-    } else {
-      await query('UPDATE users SET name = $1 WHERE id = $2', [name, decoded.id]);
-    }
+    await query('UPDATE users SET name = $1 WHERE id = $2', [name, decoded.id]);
 
     const updatedUser = await query('SELECT * FROM users WHERE id = $1', [decoded.id]);
     return NextResponse.json(updatedUser.rows[0]);
