@@ -40,6 +40,12 @@ export default function Player() {
           <div className="player-meta">
             <div className="player-title">{currentSong.title}</div>
             <div className="player-artist">{currentSong.artist}</div>
+            {currentSong.uploader_id && currentSong.uploader_name && (
+              <a href={`/user/${currentSong.uploader_id}`}
+                style={{ fontSize: '0.62rem', color: 'var(--primary)', fontWeight: '700', opacity: 0.85, textDecoration: 'none' }}>
+                @{currentSong.uploader_name}
+              </a>
+            )}
           </div>
         </div>
 

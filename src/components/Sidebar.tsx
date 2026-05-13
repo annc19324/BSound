@@ -1,16 +1,23 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { Home, Search, Library, PlusSquare, Heart, Music, LogOut, LogIn, UserPlus, Menu, X, User, CheckCircle, MessageSquare } from 'lucide-react';
+import { Home, Search, Library, PlusSquare, Heart, Music, LogOut, LogIn, UserPlus, X, User, CheckCircle, MessageSquare, Menu } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 
 export default function Sidebar() {
   const [playlists, setPlaylists] = useState<any[]>([]);
-  const [user, setUser] = useState<any>(undefined); // undefined means loading
+  const [user, setUser] = useState<any>(undefined);
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  // Draggable FAB state
+  const [fabPos, setFabPos] = useState({ x: 16, y: -1 }); // -1 = uninitialized (use CSS default)
+  const dragging = useRef(false);
+  const startTouch = useRef({ x: 0, y: 0, fabX: 0, fabY: 0 });
+  const fabRef = useRef<HTMLButtonElement>(null);
+  const didDrag = useRef(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -52,11 +59,43 @@ export default function Sidebar() {
     router.refresh();
   };
 
+  const onPointerDown = (e: React.PointerEvent) => {
+    dragging.current = true;
+    didDrag.current = false;
+    const rect = fabRef.current!.getBoundingClientRect();
+    startTouch.current = { x: e.clientX, y: e.clientY, fabX: rect.left, fabY: rect.top };
+    fabRef.current!.setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    const dx = e.clientX - startTouch.current.x;
+    const dy = e.clientY - startTouch.current.y;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) didDrag.current = true;
+    const newX = Math.max(0, Math.min(window.innerWidth - 56, startTouch.current.fabX + dx));
+    const newY = Math.max(0, Math.min(window.innerHeight - 56, startTouch.current.fabY + dy));
+    setFabPos({ x: newX, y: newY });
+  };
+
+  const onPointerUp = () => {
+    dragging.current = false;
+    if (!didDrag.current) setIsOpen(true);
+  };
+
   return (
     <>
+      {/* Draggable circular FAB */}
       {!isOpen && (
-        <button className="mobile-toggle" onClick={() => setIsOpen(true)}>
-          <Menu size={24} />
+        <button
+          ref={fabRef}
+          className="fab-menu"
+          style={fabPos.y >= 0 ? { left: fabPos.x, bottom: 'auto', top: fabPos.y } : {}}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          aria-label="Mở menu"
+        >
+          <Menu size={22} />
         </button>
       )}
 

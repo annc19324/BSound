@@ -9,6 +9,8 @@ interface Song {
   file_url: string;
   image_url?: string;
   lyrics?: string;
+  uploader_id?: number;
+  uploader_name?: string;
 }
 
 interface PlayerContextType {
