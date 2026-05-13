@@ -5,6 +5,7 @@ import { PlayerProvider } from "@/context/PlayerContext";
 import Player from "@/components/Player";
 import Sidebar from "@/components/Sidebar";
 import AdHeader from "@/components/AdHeader";
+import { Toaster } from "react-hot-toast";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,6 +24,25 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <PlayerProvider>
+          <Toaster 
+            position="top-center"
+            toastOptions={{
+              style: {
+                background: '#1a1a1a',
+                color: '#fff',
+                border: '1px solid rgba(243, 186, 47, 0.2)',
+                borderRadius: '12px',
+                fontSize: '0.9rem',
+                fontWeight: '600'
+              },
+              success: {
+                iconTheme: {
+                  primary: 'var(--primary)',
+                  secondary: '#000',
+                },
+              },
+            }}
+          />
           <div className="app-container">
             <Sidebar />
             <main className="main-content">

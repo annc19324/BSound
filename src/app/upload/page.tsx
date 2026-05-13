@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Image as ImageIcon, UploadCloud, FileMusic } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 // Upload a file directly to Cloudinary using a signed URL from our API
 async function uploadToCloudinaryDirect(
@@ -84,7 +85,7 @@ export default function UploadPage() {
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage('');
-    if (!file) { setMessage('Lỗi: Vui lòng chọn file nhạc.'); return; }
+    if (!file) { toast.error('Vui lòng chọn file nhạc.'); return; }
     setLoading(true);
     setProgress(0);
 
@@ -111,14 +112,14 @@ export default function UploadPage() {
       });
 
       if (res.ok) {
-        setMessage('Đăng nhạc thành công! Đang chuyển hướng...');
+        toast.success('Đăng nhạc thành công!');
         setTimeout(() => router.push('/'), 1500);
       } else {
         const data = await res.json();
-        setMessage(`Lỗi: ${data.error || 'Đã có lỗi xảy ra'}`);
+        toast.error(`Lỗi: ${data.error || 'Đã có lỗi xảy ra'}`);
       }
     } catch (err: any) {
-      setMessage(`Lỗi: ${err.message}`);
+      toast.error(`Lỗi: ${err.message}`);
     } finally {
       setLoading(false);
       setStage('');
@@ -218,9 +219,7 @@ export default function UploadPage() {
               </>
             )}
           </button>
-          {message && (
-            <p className={`notice ${message.includes('Lỗi') ? 'err' : 'ok'}`}>{message}</p>
-          )}
+
         </div>
       </form>
     </div>

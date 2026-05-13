@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -16,15 +17,15 @@ export default function RegisterPage() {
     setError('');
 
     if (name.length < 2) {
-      setError('Tên quá ngắn.');
+      toast.error('Tên quá ngắn.');
       return;
     }
     if (!email.includes('@')) {
-      setError('Email không hợp lệ.');
+      toast.error('Email không hợp lệ.');
       return;
     }
     if (password.length < 6) {
-      setError('Mật khẩu phải từ 6 ký tự.');
+      toast.error('Mật khẩu phải từ 6 ký tự.');
       return;
     }
 
@@ -38,13 +39,14 @@ export default function RegisterPage() {
       });
 
       if (res.ok) {
+        toast.success('Đăng ký thành công!');
         router.push('/login');
       } else {
         const data = await res.json();
-        setError(data.error);
+        toast.error(data.error);
       }
     } catch (err) {
-      setError('Lỗi kết nối.');
+      toast.error('Lỗi kết nối.');
     } finally {
       setLoading(false);
     }
@@ -85,7 +87,7 @@ export default function RegisterPage() {
         >
           {loading ? 'Đang đăng ký...' : 'Đăng ký'}
         </button>
-        {error && <p style={{ color: '#ff4444', textAlign: 'center' }}>{error}</p>}
+
         <p style={{ textAlign: 'center', fontSize: '0.9rem' }}>
           Đã có tài khoản? <a href="/login" style={{ color: 'var(--primary)' }}>Đăng nhập</a>
         </p>

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -16,11 +17,11 @@ export default function LoginPage() {
     setError('');
 
     if (!email.includes('@')) {
-      setError('Email không hợp lệ.');
+      toast.error('Email không hợp lệ.');
       return;
     }
     if (password.length < 6) {
-      setError('Mật khẩu phải từ 6 ký tự.');
+      toast.error('Mật khẩu phải từ 6 ký tự.');
       return;
     }
 
@@ -34,13 +35,14 @@ export default function LoginPage() {
       });
 
       if (res.ok) {
+        toast.success('Đăng nhập thành công!');
         window.location.href = '/';
       } else {
         const data = await res.json();
-        setError(data.error);
+        toast.error(data.error);
       }
     } catch (err) {
-      setError('Lỗi kết nối.');
+      toast.error('Lỗi kết nối.');
     } finally {
       setLoading(false);
     }
@@ -80,7 +82,7 @@ export default function LoginPage() {
           {loading ? 'Đang xử lý...' : 'Tiếp tục'}
         </button>
 
-        {error && <p style={{ color: '#ff4444', textAlign: 'center', fontSize: '0.9rem' }}>{error}</p>}
+
         
         <p style={{ textAlign: 'center', fontSize: '0.9rem', marginTop: '12px' }}>
           Chưa có tài khoản? <Link href="/register" style={{ color: 'var(--primary)', fontWeight: '700' }}>Đăng ký ngay</Link>

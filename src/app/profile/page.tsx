@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Save } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
@@ -21,16 +22,16 @@ export default function ProfilePage() {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage('Đang cập nhật...');
     const formData = new FormData();
     formData.append('name', newName);
-
     const res = await fetch('/api/auth/me', { method: 'PATCH', body: formData });
     if (res.ok) {
-      setMessage('Cập nhật thành công!');
+      toast.success('Cập nhật thành công!');
       const updated = await res.json();
       setUser(updated);
-    } else setMessage('Đã có lỗi xảy ra.');
+    } else {
+      toast.error('Đã có lỗi xảy ra.');
+    }
   };
 
   if (loading) return <div className="loading">Đang tải...</div>;
@@ -68,9 +69,7 @@ export default function ProfilePage() {
           <Save size={17} />
           Lưu thay đổi
         </button>
-        {message && (
-          <p className={`prof-msg ${message.includes('Lỗi') ? 'err' : 'ok'}`}>{message}</p>
-        )}
+
       </form>
     </div>
   );

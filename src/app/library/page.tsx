@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ListMusic, Pencil, Trash2, Check, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function LibraryPage() {
   const [playlists, setPlaylists] = useState<any[]>([]);
@@ -32,9 +33,32 @@ export default function LibraryPage() {
   };
 
   const deletePlaylist = async (id: number, name: string) => {
-    if (!confirm(`Xoá playlist "${name}"?`)) return;
-    await fetch(`/api/playlists/${id}`, { method: 'DELETE' });
-    load();
+    toast((t) => (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <p style={{ margin: 0, fontSize: '0.85rem' }}>Xoá playlist <strong>{name}</strong>?</p>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+          <button 
+            onClick={() => toast.dismiss(t.id)}
+            style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+          >
+            Huỷ
+          </button>
+          <button 
+            onClick={async () => {
+              toast.dismiss(t.id);
+              const res = await fetch(`/api/playlists/${id}`, { method: 'DELETE' });
+              if (res.ok) {
+                toast.success('Đã xoá playlist');
+                load();
+              }
+            }}
+            style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', background: '#ff4444', color: '#fff', fontWeight: '700' }}
+          >
+            Xoá
+          </button>
+        </div>
+      </div>
+    ), { duration: 5000 });
   };
 
   return (

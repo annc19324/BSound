@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Music, Users, Megaphone, Check, X, Trash2, Edit2, Save, Camera } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'songs' | 'users' | 'ads'>('songs');
@@ -38,6 +39,8 @@ export default function AdminDashboard() {
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const endpoint = activeTab === 'songs' ? '/api/admin/songs' : '/api/admin/users';
+    
+    let options: RequestInit = { method: 'PATCH' };
     if (activeTab === 'songs') {
       const formData = new FormData();
       formData.append('id', editingItem.id);
@@ -45,16 +48,20 @@ export default function AdminDashboard() {
       formData.append('artist', editingItem.artist);
       formData.append('lyrics', editingItem.lyrics);
       if (editImage) formData.append('image', editImage);
-      await fetch(endpoint, { method: 'PATCH', body: formData });
+      options.body = formData;
     } else {
-      await fetch(endpoint, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingItem),
-      });
+      options.headers = { 'Content-Type': 'application/json' };
+      options.body = JSON.stringify(editingItem);
     }
-    setEditingItem(null); setEditImage(null); setEditImagePreview(null);
-    fetchData();
+
+    const res = await fetch(endpoint, options);
+    if (res.ok) {
+      toast.success('Đã cập nhật thành công');
+      setEditingItem(null); setEditImage(null); setEditImagePreview(null);
+      fetchData();
+    } else {
+      toast.error('Cập nhật thất bại');
+    }
   };
 
   const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,26 +71,61 @@ export default function AdminDashboard() {
 
   const updateSongStatus = async (id: number, status: string) => {
     const endpoint = status === 'APPROVED' ? `/api/admin/approve/${id}` : `/api/admin/reject/${id}`;
-    await fetch(endpoint, { method: 'POST' });
-    fetchData();
+    const res = await fetch(endpoint, { method: 'POST' });
+    if (res.ok) {
+      toast.success(status === 'APPROVED' ? 'Đã duyệt bài hát' : 'Đã từ chối bài hát');
+      fetchData();
+    } else {
+      toast.error('Cập nhật thất bại');
+    }
   };
 
   const deleteItem = async (id: number) => {
-    if (!confirm('Xác nhận xoá?')) return;
-    const endpoint = activeTab === 'songs' ? `/api/admin/songs?id=${id}` : `/api/admin/users?id=${id}`;
-    await fetch(endpoint, { method: 'DELETE' });
-    fetchData();
+    toast((t) => (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <p style={{ margin: 0, fontSize: '0.85rem' }}>Xác nhận xoá mục này?</p>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+          <button 
+            onClick={() => toast.dismiss(t.id)}
+            style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+          >
+            Huỷ
+          </button>
+          <button 
+            onClick={async () => {
+              toast.dismiss(t.id);
+              const endpoint = activeTab === 'songs' ? `/api/admin/songs?id=${id}` : `/api/admin/users?id=${id}`;
+              const res = await fetch(endpoint, { method: 'DELETE' });
+              if (res.ok) {
+                toast.success('Đã xoá thành công');
+                fetchData();
+              } else {
+                toast.error('Có lỗi xảy ra khi xoá');
+              }
+            }}
+            style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', background: '#ff4444', color: '#fff', fontWeight: '700' }}
+          >
+            Xoá
+          </button>
+        </div>
+      </div>
+    ), { duration: 5000 });
   };
 
   const handleAddAd = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch('/api/admin/ads', {
+    const res = await fetch('/api/admin/ads', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newAd),
     });
-    setNewAd({ content: '', image_url: '' });
-    fetchData();
+    if (res.ok) {
+      toast.success('Đã thêm quảng cáo');
+      setNewAd({ content: '', image_url: '' });
+      fetchData();
+    } else {
+      toast.error('Thêm thất bại');
+    }
   };
 
   const closeEdit = () => { setEditingItem(null); setEditImage(null); setEditImagePreview(null); };

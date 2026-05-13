@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { usePlayer } from '@/context/PlayerContext';
 import { Music, ListMusic, Play, Pencil, Trash2, Save, X } from 'lucide-react';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 
 export default function UserProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -27,9 +28,34 @@ export default function UserProfilePage() {
   const isOwner = myId !== null && data?.user?.id === myId;
 
   const deleteSong = async (songId: number, title: string) => {
-    if (!confirm(`Xoá bài "${title}"?`)) return;
-    await fetch(`/api/songs/${songId}/owner`, { method: 'DELETE' });
-    load();
+    toast((t) => (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <p style={{ margin: 0, fontSize: '0.85rem' }}>Xoá bài <strong>{title}</strong>?</p>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+          <button 
+            onClick={() => toast.dismiss(t.id)}
+            style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+          >
+            Huỷ
+          </button>
+          <button 
+            onClick={async () => {
+              toast.dismiss(t.id);
+              const res = await fetch(`/api/songs/${songId}/owner`, { method: 'DELETE' });
+              if (res.ok) {
+                toast.success('Đã xoá bài hát');
+                load();
+              } else {
+                toast.error('Không thể xoá bài hát');
+              }
+            }}
+            style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', background: '#ff4444', color: '#fff', fontWeight: '700' }}
+          >
+            Xoá
+          </button>
+        </div>
+      </div>
+    ), { duration: 5000 });
   };
 
   const saveEdit = async () => {

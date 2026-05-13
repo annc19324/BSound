@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { usePlayer } from '@/context/PlayerContext';
 import { MoreVertical, Heart, Headphones, Music } from 'lucide-react';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 
 interface Song {
   id: number;
@@ -31,7 +32,7 @@ export default function SongGrid({ songs, playlists }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ song_id: songId }),
     });
-    if (res.ok) { alert('Đã thêm vào playlist!'); setShowMenu(null); }
+    if (res.ok) { toast.success('Đã thêm vào playlist!'); setShowMenu(null); }
   };
 
   if (songs.length === 0) {
