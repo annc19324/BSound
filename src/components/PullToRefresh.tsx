@@ -11,6 +11,12 @@ export default function PullToRefresh() {
 
   useEffect(() => {
     const handleTouchStart = (e: TouchEvent) => {
+      // Ignore if touching the FAB menu
+      if ((e.target as Element).closest('.fab-menu')) {
+        startY.current = -1;
+        return;
+      }
+
       // Only pull if we are at the top of the page
       if (window.scrollY === 0) {
         startY.current = e.touches[0].clientY;
