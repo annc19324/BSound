@@ -17,12 +17,12 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Songs uploaded by user (approved only)
+    // Songs uploaded by user — all statuses so owner can manage pending ones too
     const songsRes = await query(
       `SELECT s.*, u.name AS uploader_name
        FROM songs s
        LEFT JOIN users u ON u.id = s.uploader_id
-       WHERE s.uploader_id = $1 AND s.status = 'APPROVED'
+       WHERE s.uploader_id = $1
        ORDER BY s.created_at DESC`,
       [id]
     );

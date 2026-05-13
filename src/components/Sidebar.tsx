@@ -2,18 +2,23 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { Home, Search, Library, PlusSquare, Heart, Music, LogOut, LogIn, UserPlus, X, User, CheckCircle, MessageSquare, Menu } from 'lucide-react';
+import {
+  Home, Search, Library, PlusSquare, Heart, Music,
+  LogOut, LogIn, UserPlus, X, CheckCircle, MessageSquare,
+  Menu, User, LayoutDashboard, Bell
+} from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 
 export default function Sidebar() {
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [user, setUser] = useState<any>(undefined);
   const [isOpen, setIsOpen] = useState(false);
+  const [notif, setNotif] = useState({ pending: 0, messages: 0, userId: null as number | null });
   const router = useRouter();
   const pathname = usePathname();
 
   // Draggable FAB state
-  const [fabPos, setFabPos] = useState({ x: 16, y: -1 }); // -1 = uninitialized (use CSS default)
+  const [fabPos, setFabPos] = useState({ x: 16, y: -1 });
   const dragging = useRef(false);
   const startTouch = useRef({ x: 0, y: 0, fabX: 0, fabY: 0 });
   const fabRef = useRef<HTMLButtonElement>(null);
@@ -22,35 +27,34 @@ export default function Sidebar() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch('/api/auth/me', { 
-          cache: 'no-store',
-          credentials: 'include' 
-        });
+        const res = await fetch('/api/auth/me', { cache: 'no-store', credentials: 'include' });
         const data = await res.json();
-        console.log('Auth response in Sidebar:', res.status, data);
-        if (res.ok && !data.error) {
-          setUser(data);
-        } else {
-          setUser(null);
-        }
-      } catch (err) {
-        console.error('Auth fetch error in Sidebar:', err);
-        setUser(null);
-      }
+        if (res.ok && !data.error) setUser(data);
+        else setUser(null);
+      } catch { setUser(null); }
     };
 
     const fetchPlaylists = async () => {
       try {
         const res = await fetch('/api/playlists', { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          setPlaylists(data);
-        }
-      } catch (err) {}
+        if (res.ok) setPlaylists(await res.json());
+      } catch {}
+    };
+
+    const fetchNotif = async () => {
+      try {
+        const res = await fetch('/api/notifications', { cache: 'no-store' });
+        if (res.ok) setNotif(await res.json());
+      } catch {}
     };
 
     checkAuth();
     fetchPlaylists();
+    fetchNotif();
+
+    // Refresh notifications every 30s
+    const interval = setInterval(fetchNotif, 30000);
+    return () => clearInterval(interval);
   }, [pathname]);
 
   const handleLogout = async () => {
@@ -66,7 +70,6 @@ export default function Sidebar() {
     startTouch.current = { x: e.clientX, y: e.clientY, fabX: rect.left, fabY: rect.top };
     fabRef.current!.setPointerCapture(e.pointerId);
   };
-
   const onPointerMove = (e: React.PointerEvent) => {
     if (!dragging.current) return;
     const dx = e.clientX - startTouch.current.x;
@@ -76,11 +79,13 @@ export default function Sidebar() {
     const newY = Math.max(0, Math.min(window.innerHeight - 56, startTouch.current.fabY + dy));
     setFabPos({ x: newX, y: newY });
   };
-
   const onPointerUp = () => {
     dragging.current = false;
     if (!didDrag.current) setIsOpen(true);
   };
+
+  const close = () => setIsOpen(false);
+  const isActive = (path: string) => pathname === path ? 'active' : '';
 
   return (
     <>
@@ -96,70 +101,94 @@ export default function Sidebar() {
           aria-label="Mở menu"
         >
           <Menu size={22} />
+          {/* Notification dot on FAB */}
+          {(notif.pending > 0) && (
+            <span className="fab-notif-dot">{notif.pending}</span>
+          )}
         </button>
       )}
 
-      {isOpen && <div className="sidebar-backdrop" onClick={() => setIsOpen(false)} />}
+      {isOpen && <div className="sidebar-backdrop" onClick={close} />}
 
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
 
         {/* ── Logo ── */}
         <div className="sb-logo-row">
-          <Link href="/" onClick={() => setIsOpen(false)} className="sb-logo-link">
+          <Link href="/" onClick={close} className="sb-logo-link">
             <img src="/bsound.png" alt="BSound" className="sb-logo-img" />
             <span className="sb-logo-text">BSound</span>
           </Link>
-          <button className="mobile-close" onClick={() => setIsOpen(false)}><X size={22} /></button>
+          <button className="mobile-close" onClick={close}><X size={22} /></button>
         </div>
 
         {/* ── Auth / Profile ── */}
         <div className="sb-section">
           {user === undefined && (
             <div className="sb-skeleton">
-              <div className="sk-avatar" />
-              <div className="sk-text" />
+              <div className="sk-avatar" /><div className="sk-text" />
             </div>
           )}
           {user === null && (
             <div className="sb-auth-box glass">
-              <Link href="/login" className="sb-auth-btn sb-login" onClick={() => setIsOpen(false)}>
+              <Link href="/login" className="sb-auth-btn sb-login" onClick={close}>
                 <LogIn size={15} /> Đăng nhập
               </Link>
-              <Link href="/register" className="sb-auth-btn sb-register" onClick={() => setIsOpen(false)}>
+              <Link href="/register" className="sb-auth-btn sb-register" onClick={close}>
                 <UserPlus size={15} /> Đăng ký
               </Link>
             </div>
           )}
           {user && (
-            <Link href="/profile" className="sb-profile glass" onClick={() => setIsOpen(false)}>
+            <Link href="/profile" className="sb-profile glass" onClick={close}>
               <div className="sb-avatar">{user.name?.charAt(0).toUpperCase() || 'U'}</div>
               <span className="sb-username">{user.name}</span>
             </Link>
           )}
         </div>
 
-        {/* ── Chat highlight ── */}
+        {/* ── Chat ── */}
         <div className="sb-section">
-          <Link href="/chat" className="sb-chat-link" onClick={() => setIsOpen(false)}>
+          <Link href="/chat" className="sb-chat-link" onClick={close}>
             <MessageSquare size={16} />
             <span>Kênh Chat Tổng</span>
+            {notif.messages > 0 && <span className="sb-badge">{notif.messages > 99 ? '99+' : notif.messages}</span>}
           </Link>
         </div>
 
         {/* ── Main Nav ── */}
         <nav className="sb-section sb-nav">
-          <Link href="/"       className={`sb-item ${pathname === '/' ? 'active' : ''}`} onClick={() => setIsOpen(false)}><Home size={18} /> Trang chủ</Link>
-          <Link href="/search" className={`sb-item ${pathname === '/search' ? 'active' : ''}`} onClick={() => setIsOpen(false)}><Search size={18} /> Tìm kiếm</Link>
-          <Link href="/library" className={`sb-item ${pathname === '/library' ? 'active' : ''}`} onClick={() => setIsOpen(false)}><Library size={18} /> Thư viện</Link>
+          <Link href="/"       className={`sb-item ${isActive('/')}`}       onClick={close}><Home size={18} /> Trang chủ</Link>
+          <Link href="/search" className={`sb-item ${isActive('/search')}`} onClick={close}><Search size={18} /> Tìm kiếm</Link>
+          <Link href="/library" className={`sb-item ${isActive('/library')}`} onClick={close}><Library size={18} /> Thư viện</Link>
         </nav>
 
         {/* ── Personal ── */}
         <div className="sb-section">
           <div className="sb-label">Cá nhân</div>
-          <Link href="/upload" className={`sb-item ${pathname === '/upload' ? 'active' : ''}`} onClick={() => setIsOpen(false)}><PlusSquare size={18} /> Đăng nhạc</Link>
-          <Link href="/liked"  className={`sb-item ${pathname === '/liked'  ? 'active' : ''}`} onClick={() => setIsOpen(false)}><Heart size={18} /> Đã thích</Link>
+          <Link href="/upload" className={`sb-item ${isActive('/upload')}`} onClick={close}>
+            <PlusSquare size={18} /> Đăng nhạc
+            {notif.pending > 0 && <span className="sb-badge sb-badge-warning">{notif.pending}</span>}
+          </Link>
+          <Link href="/liked" className={`sb-item ${isActive('/liked')}`} onClick={close}>
+            <Heart size={18} /> Đã thích
+          </Link>
+          {/* Thông tin cá nhân */}
+          {user && (
+            <Link href="/profile" className={`sb-item ${isActive('/profile')}`} onClick={close}>
+              <User size={18} /> Thông tin cá nhân
+            </Link>
+          )}
+          {/* Trang cá nhân công khai */}
+          {user && notif.userId && (
+            <Link href={`/user/${notif.userId}`} className={`sb-item ${pathname.startsWith('/user/') ? 'active' : ''}`} onClick={close}>
+              <LayoutDashboard size={18} /> Trang của tôi
+            </Link>
+          )}
           {user?.role?.trim().toUpperCase() === 'ADMIN' && (
-            <Link href="/admin" className={`sb-item sb-admin ${pathname === '/admin' ? 'active' : ''}`} onClick={() => setIsOpen(false)}><CheckCircle size={18} /> Quản lý</Link>
+            <Link href="/admin" className={`sb-item sb-admin ${isActive('/admin')}`} onClick={close}>
+              <CheckCircle size={18} /> Quản lý
+              {notif.pending > 0 && <span className="sb-badge sb-badge-warning">{notif.pending}</span>}
+            </Link>
           )}
         </div>
 
@@ -168,7 +197,7 @@ export default function Sidebar() {
           <div className="sb-section" style={{ flex: 1, overflowY: 'auto' }}>
             <div className="sb-label">Playlist của bạn</div>
             {playlists.map(p => (
-              <Link key={p.id} href={`/playlist/${p.id}`} className="sb-item" style={{ fontSize: '0.82rem' }} onClick={() => setIsOpen(false)}>
+              <Link key={p.id} href={`/playlist/${p.id}`} className="sb-item" style={{ fontSize: '0.82rem' }} onClick={close}>
                 <Music size={15} /> {p.name}
               </Link>
             ))}

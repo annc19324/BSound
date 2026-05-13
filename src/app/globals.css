@@ -1430,3 +1430,59 @@ p { color: var(--text-muted); }
   .song-title-large { font-size: 1.8rem; }
   .song-detail-root { flex-direction: column; }
 }
+
+/* ─────────────────────────────────────
+   Sidebar notification badges
+   ───────────────────────────────────── */
+.sb-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 20px;
+  font-size: 0.62rem;
+  font-weight: 900;
+  background: rgba(255,255,255,0.15);
+  color: white;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.sb-badge-warning {
+  background: var(--primary);
+  color: #000;
+}
+
+/* FAB notification dot */
+.fab-menu { position: relative; }
+.fab-notif-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 20px;
+  background: #ff4444;
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg-main);
+}
+
+/* ─────────────────────────────────────
+   Song edit form (in user profile page)
+   ───────────────────────────────────── */
+.song-edit-form {
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(243,186,47,0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 4px;
+}
