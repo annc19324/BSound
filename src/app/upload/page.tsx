@@ -8,6 +8,7 @@ import { Image as ImageIcon, UploadCloud, FileMusic } from 'lucide-react';
 async function uploadToCloudinaryDirect(
   file: File,
   folder: string,
+  resourceType: 'image' | 'video' = 'image',
   onProgress?: (pct: number) => void
 ): Promise<string> {
   // 1. Get signed params from our server
@@ -25,7 +26,8 @@ async function uploadToCloudinaryDirect(
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`);
+    // Use explicit resource_type endpoint (video handles mp3/mp4/wav, image handles jpg/png)
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`);
     if (onProgress) {
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
@@ -35,9 +37,14 @@ async function uploadToCloudinaryDirect(
       try {
         const res = JSON.parse(xhr.responseText);
         if (xhr.status === 200) {
-          resolve(res.secure_url);
+          let url: string = res.secure_url;
+          // If uploaded as video but we want audio, transform URL to .mp3
+          if (resourceType === 'video' && !url.endsWith('.mp3')) {
+            // Cloudinary URL transformation: insert f_mp3 before the version segment
+            url = url.replace('/upload/', '/upload/f_mp3/').replace(/\.[^/.]+$/, '.mp3');
+          }
+          resolve(url);
         } else {
-          // Show the actual Cloudinary error so we can debug
           reject(new Error(`Cloudinary: ${res.error?.message || xhr.responseText}`));
         }
       } catch {
@@ -82,16 +89,17 @@ export default function UploadPage() {
     setProgress(0);
 
     try {
-      // 1. Upload audio directly to Cloudinary
+      // 1. Upload audio/video directly to Cloudinary as 'video' resource type
+      //    (Cloudinary's 'video' type handles mp3, mp4, wav, etc.)
       setStage('nhạc');
-      const fileUrl = await uploadToCloudinaryDirect(file, 'bsound', setProgress);
+      const fileUrl = await uploadToCloudinaryDirect(file, 'bsound', 'video', setProgress);
 
       // 2. Upload image if provided
       let imageUrl: string | null = null;
       if (image) {
         setStage('ảnh bìa');
         setProgress(0);
-        imageUrl = await uploadToCloudinaryDirect(image, 'bsound_images');
+        imageUrl = await uploadToCloudinaryDirect(image, 'bsound_images', 'image');
       }
 
       // 3. Save metadata to our DB (tiny JSON request — no 413 risk)
