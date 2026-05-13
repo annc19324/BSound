@@ -61,7 +61,7 @@ export default function UploadPage() {
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [title, setTitle] = useState('');
-  const [artist, setArtist] = useState('');
+  const [artist, setArtist] = useState('B Ray');
   const [lyrics, setLyrics] = useState('');
   const [progress, setProgress] = useState(0);
   const [stage, setStage] = useState('');   // what's currently uploading
@@ -170,6 +170,8 @@ export default function UploadPage() {
                 placeholder="Ca sĩ, Rapper..."
                 value={artist}
                 onChange={(e) => setArtist(e.target.value)}
+                onFocus={() => { if (artist === 'B Ray') setArtist(''); }}
+                onBlur={() => { if (artist.trim() === '') setArtist('B Ray'); }}
                 required
               />
             </div>
