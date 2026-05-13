@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usePlayer } from '@/context/PlayerContext';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Gauge, Download, Shuffle, Repeat, Repeat1 } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Gauge, Download, Shuffle, Repeat, Repeat1, ThumbsUp, ThumbsDown } from 'lucide-react';
 
 export default function Player() {
   const { 
@@ -15,6 +15,45 @@ export default function Player() {
   const [showTimerMenu, setShowTimerMenu] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [customMinutes, setCustomMinutes] = useState('');
+  const [likes, setLikes] = useState(0);
+  const [dislikes, setDislikes] = useState(0);
+  const [userInteraction, setUserInteraction] = useState<'LIKE' | 'DISLIKE' | null>(null);
+  const viewedSongId = useRef<number | null>(null);
+
+  // When song changes: load interaction state + increment view once
+  useEffect(() => {
+    if (!currentSong) return;
+    // Increment view once per song
+    if (viewedSongId.current !== currentSong.id) {
+      viewedSongId.current = currentSong.id;
+      fetch(`/api/songs/${currentSong.id}/interactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'VIEW' }),
+      });
+    }
+    // Load user's interaction
+    fetch(`/api/songs/${currentSong.id}/interactions`)
+      .then(r => r.json())
+      .then(d => setUserInteraction(d.userInteraction || null));
+    // Load current counts
+    fetch(`/api/songs/${currentSong.id}`)
+      .then(r => r.json())
+      .then(d => { setLikes(d.likes || 0); setDislikes(d.dislikes || 0); });
+  }, [currentSong?.id]);
+
+  const handleInteraction = async (type: 'LIKE' | 'DISLIKE') => {
+    if (!currentSong) return;
+    const res = await fetch(`/api/songs/${currentSong.id}/interactions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type }),
+    });
+    if (res.ok) {
+      const d = await res.json();
+      setLikes(d.likes); setDislikes(d.dislikes); setUserInteraction(d.userInteraction);
+    }
+  };
 
   if (!currentSong) return null;
 
@@ -64,8 +103,23 @@ export default function Player() {
           </button>
         </div>
 
-        {/* Right: Volume + Download (desktop only) */}
+        {/* Right: Like/Dislike + Volume + Download (desktop only) */}
         <div className="player-right hide-mobile">
+          {/* Like / Dislike */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <button onClick={() => handleInteraction('LIKE')} title="Thích"
+              style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', fontWeight: '700',
+                color: userInteraction === 'LIKE' ? 'var(--primary)' : 'var(--text-muted)', transition: '0.2s' }}>
+              <ThumbsUp size={15} fill={userInteraction === 'LIKE' ? 'var(--primary)' : 'none'} />
+              {likes}
+            </button>
+            <button onClick={() => handleInteraction('DISLIKE')} title="Không thích"
+              style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', fontWeight: '700',
+                color: userInteraction === 'DISLIKE' ? '#ff6b6b' : 'var(--text-muted)', transition: '0.2s' }}>
+              <ThumbsDown size={15} fill={userInteraction === 'DISLIKE' ? '#ff6b6b' : 'none'} />
+              {dislikes}
+            </button>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Volume2 size={18} color={volume > 1 ? 'var(--primary)' : 'currentColor'} />
             <input type="range" min="0" max="2" step="0.01" value={volume}
