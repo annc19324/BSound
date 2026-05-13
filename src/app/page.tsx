@@ -41,7 +41,7 @@ export default function Home() {
     <div className="fade-in">
       <header style={{ marginBottom: '32px' }}>
         <h1 style={{ fontSize: '2.5rem', fontWeight: '900', letterSpacing: '-1px', lineHeight: 1 }}>
-          Âm nhạc <span style={{ color: 'var(--primary)' }}>Sáng tạo</span>
+          B <span style={{ color: 'var(--primary)' }}>Sound</span>
         </h1>
       </header>
 
@@ -50,19 +50,19 @@ export default function Home() {
           <h2 style={{ fontSize: '1.2rem', fontWeight: '800' }}>Mới cập nhật</h2>
           <Link href="/upload" style={{ color: 'var(--primary)', fontWeight: '700', textTransform: 'uppercase', fontSize: '0.7rem' }}>+ Đăng nhạc</Link>
         </div>
-        
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', 
-          gap: '20px' 
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+          gap: '20px'
         }}>
           {songs.length > 0 ? songs.map((song) => (
             <div key={song.id} className="song-card" style={{ position: 'relative' }}>
-              <div 
+              <div
                 onClick={() => playSong(song, songs)}
-                style={{ 
-                  width: '100%', 
-                  aspectRatio: '1', 
+                style={{
+                  width: '100%',
+                  aspectRatio: '1',
                   background: '#1a1a1a',
                   borderRadius: '8px',
                   marginBottom: '8px',
@@ -93,7 +93,7 @@ export default function Home() {
                     <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Heart size={10} fill="var(--primary)" color="var(--primary)" /> {song.likes}</span>
                   </div>
                 </div>
-                
+
                 <div style={{ position: 'relative' }}>
                   <button onClick={(e) => { e.stopPropagation(); setShowMenu(showMenu === song.id ? null : song.id); }} style={{ padding: '2px' }}>
                     <MoreVertical size={14} color="var(--text-muted)" />
@@ -103,8 +103,8 @@ export default function Home() {
                       <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', padding: '4px', textTransform: 'uppercase', fontWeight: '800' }}>Thêm vào Playlist</div>
                       <div style={{ maxHeight: '120px', overflowY: 'auto', marginTop: '4px' }}>
                         {playlists.map(p => (
-                          <div 
-                            key={p.id} 
+                          <div
+                            key={p.id}
                             onClick={() => addToPlaylist(song.id, p.id)}
                             style={{ padding: '8px', cursor: 'pointer', borderRadius: '6px', fontSize: '0.8rem' }}
                             className="menu-item"

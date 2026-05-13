@@ -9,8 +9,9 @@ import AdHeader from "@/components/AdHeader";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "BSound - Your Ultimate Music Hub",
-  description: "A premium music streaming platform for all your favorite tracks.",
+  title: "BSound - B Ray Sounds",
+  description: "tracks of B Ray",
+  icons: { icon: '/bsound.png' },
 };
 
 export default function RootLayout({
