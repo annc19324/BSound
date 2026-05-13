@@ -496,6 +496,23 @@ p { color: var(--text-muted); }
   to { transform: rotate(360deg); }
 }
 
+/* ── Page loading skeleton ── */
+.page-skeleton { padding: 4px; }
+.skel-hero { margin-bottom: 28px; }
+.skel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+}
+.skel-card { display: flex; flex-direction: column; }
+.skel-thumb {
+  width: 100%; aspect-ratio: 1;
+  border-radius: 10px;
+}
+
+/* fade-in animation */
+.fade-in { animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 .menu-item:hover {
   background: rgba(255, 255, 255, 0.1);
@@ -602,6 +619,184 @@ p { color: var(--text-muted); }
 
 @media (max-width: 768px) {
   .main-grid { grid-template-columns: 1fr; }
+}
+
+/* ===== Admin Page ===== */
+.admin-container { padding: 20px 24px; }
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.admin-header h1 { font-size: 1.4rem; font-weight: 900; }
+
+.admin-tabs { display: flex; gap: 8px; }
+.admin-tabs button {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 50px;
+  background: rgba(255,255,255,0.05);
+  font-weight: 700; font-size: 0.82rem; transition: 0.2s;
+}
+.admin-tabs button.active { background: var(--primary); color: black; }
+.admin-tabs button span { display: inline; }
+
+/* Cards layout — works on all screen sizes */
+.admin-cards { display: flex; flex-direction: column; gap: 10px; }
+.admin-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  transition: background 0.2s;
+}
+.admin-card:hover { background: rgba(255,255,255,0.05); }
+
+.admin-card-img {
+  width: 48px; height: 48px;
+  border-radius: 8px; object-fit: cover; flex-shrink: 0;
+}
+
+.admin-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), #ff8c00);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 1.1rem; color: black; flex-shrink: 0; overflow: hidden;
+}
+.admin-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.admin-card-body { flex: 1; min-width: 0; }
+.admin-card-title { font-weight: 700; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.admin-card-sub { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.status-badge { padding: 3px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; }
+.status-badge.pending { background: rgba(255,165,0,0.15); color: orange; }
+.status-badge.approved { background: rgba(0,255,100,0.12); color: #00e676; }
+.status-badge.rejected { background: rgba(255,68,68,0.12); color: #ff4444; }
+
+.admin-card-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.admin-card-actions button,
+.admin-card-actions a {
+  padding: 7px; border-radius: 9px;
+  background: rgba(255,255,255,0.06);
+  transition: 0.2s; display: flex; align-items: center;
+}
+.btn-approve:hover { background: rgba(0,255,100,0.2); color: #00e676; }
+.btn-edit:hover { background: rgba(243,186,47,0.2); color: var(--primary); }
+.btn-delete:hover { background: rgba(255,68,68,0.2); color: #ff4444; }
+
+/* Admin skeleton */
+.admin-skeleton { display: flex; flex-direction: column; gap: 10px; }
+.admin-skeleton-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 14px;
+}
+.skel-box {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+  background-size: 200% 100%;
+  animation: skel-shine 1.4s infinite;
+  border-radius: 6px;
+}
+.skel-img { width: 48px; height: 48px; border-radius: 8px; flex-shrink: 0; }
+.skel-text { height: 14px; flex: 1; }
+.skel-text-sm { height: 12px; width: 80px; }
+.skel-badge { height: 20px; width: 60px; border-radius: 10px; }
+@keyframes skel-shine { to { background-position: -200% 0; } }
+
+/* Admin modal */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+  z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.modal-content {
+  width: 100%; max-width: 580px; padding: 22px;
+  border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  max-height: 90dvh; overflow-y: auto;
+}
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.modal-header h2 { font-size: 1.1rem; font-weight: 800; }
+
+.edit-form-grid { display: grid; grid-template-columns: 140px 1fr; gap: 20px; align-items: flex-start; }
+.edit-left, .edit-right { display: flex; flex-direction: column; gap: 12px; }
+
+.artwork-preview {
+  position: relative; width: 100%; aspect-ratio: 1;
+  display: block; border-radius: 14px; overflow: hidden;
+  cursor: pointer; border: 2px dashed var(--glass-border);
+}
+.artwork-preview img { width: 100%; height: 100%; object-fit: cover; }
+.overlay-camera {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: 0.3s;
+}
+.artwork-preview:hover .overlay-camera { opacity: 1; }
+
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.form-group input,
+.form-group textarea,
+.form-group select {
+  padding: 10px 12px; background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.12); border-radius: 8px;
+  color: white; width: 100%; font-family: inherit; font-size: 0.88rem; transition: 0.2s;
+}
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  border-color: var(--primary); box-shadow: 0 0 0 2px rgba(243,186,47,0.15); outline: none;
+}
+
+.btn-save {
+  background: var(--primary); color: black; font-weight: 800;
+  padding: 10px 16px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; transition: 0.2s; border: none; cursor: pointer; font-size: 0.88rem;
+}
+.btn-save:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(243,186,47,0.3); }
+
+/* Ads */
+.ads-layout { display: grid; grid-template-columns: 1fr 1.5fr; gap: 24px; }
+.ad-form {
+  padding: 24px; display: flex; flex-direction: column; gap: 14px;
+  border-radius: 18px; border: 1px solid var(--glass-border); align-self: flex-start;
+}
+.ad-form h3 { font-size: 1rem; font-weight: 800; margin-bottom: 4px; }
+.ad-form input {
+  width: 100%; padding: 10px 12px; background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.12); border-radius: 8px;
+  color: white; font-family: inherit; font-size: 0.88rem; transition: 0.2s;
+}
+.ad-form input:focus { border-color: var(--primary); outline: none; }
+.btn-primary {
+  padding: 11px 16px; border-radius: 10px; background: var(--primary);
+  color: black; font-weight: 800; border: none; cursor: pointer;
+  transition: 0.2s; font-size: 0.88rem;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(243,186,47,0.3); }
+.ads-list { display: flex; flex-direction: column; gap: 10px; }
+.ad-card {
+  padding: 16px; display: flex; justify-content: space-between; align-items: center;
+  border-radius: 14px; border: 1px solid var(--glass-border); gap: 12px;
+}
+.ad-card p { font-size: 0.88rem; }
+
+@media (max-width: 768px) {
+  .admin-container { padding: 12px 16px; }
+  .admin-tabs button span { display: none; }  /* icon only on mobile */
+  .admin-tabs button { padding: 8px 12px; }
+  .admin-header { margin-bottom: 16px; }
+  .edit-form-grid { grid-template-columns: 1fr; }
+  .ads-layout { grid-template-columns: 1fr; }
 }
 
 /* ===== Upload Page ===== */
