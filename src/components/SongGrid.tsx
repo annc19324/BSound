@@ -69,7 +69,7 @@ export default function SongGrid({ songs, playlists }: Props) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <Link href={`/song/${song.id}`}>
-                <div style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{song.title}</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '4px', wordBreak: 'break-word' }}>{song.title}</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{song.artist}</div>
               </Link>
               <div style={{ display: 'flex', gap: '8px', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
