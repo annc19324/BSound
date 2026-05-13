@@ -86,6 +86,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const audio = new Audio();
     audio.crossOrigin = "anonymous"; // Needed for Web Audio API with external URLs
+    audio.playsInline = true;        // Help iOS Safari with background play
     audioRef.current = audio;
 
     const handleTimeUpdate = () => setProgress(audio.currentTime);
@@ -152,8 +153,31 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
       safePlay();
       setCurrentSong(song);
       setIsPlaying(true);
+      
+      // Setup Media Session for background play on Safari/Mobile
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: song.title,
+          artist: song.artist,
+          album: 'BSound',
+          artwork: song.image_url ? [
+            { src: song.image_url, sizes: '512x512', type: 'image/jpeg' },
+            { src: song.image_url, sizes: '512x512', type: 'image/png' }
+          ] : []
+        });
+      }
     }
   };
+
+  // Setup Media Session Handlers
+  useEffect(() => {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.setActionHandler('play', () => { safePlay(); setIsPlaying(true); });
+      navigator.mediaSession.setActionHandler('pause', () => { if (audioRef.current) audioRef.current.pause(); setIsPlaying(false); });
+      navigator.mediaSession.setActionHandler('previoustrack', () => prevSong());
+      navigator.mediaSession.setActionHandler('nexttrack', () => nextSong());
+    }
+  }, []);
 
   const nextSong = () => {
     const q = queueRef.current;

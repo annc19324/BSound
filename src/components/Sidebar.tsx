@@ -19,6 +19,7 @@ export default function Sidebar() {
 
   // Draggable FAB state - Default position at TOP
   const [fabPos, setFabPos] = useState({ x: 20, y: 80 });
+  const [mounted, setMounted] = useState(false);
   const dragging = useRef(false);
   const startTouch = useRef({ x: 0, y: 0, fabX: 0, fabY: 0 });
   const fabRef = useRef<HTMLButtonElement>(null);
@@ -26,6 +27,7 @@ export default function Sidebar() {
 
   // Load persisted FAB position on mount
   useEffect(() => {
+    setMounted(true);
     const saved = localStorage.getItem('bsound_fab_pos');
     if (saved) {
       try {
@@ -108,7 +110,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Draggable circular FAB */}
-      {!isOpen && (
+      {mounted && !isOpen && (
         <button
           ref={fabRef}
           className="fab-menu"

@@ -49,7 +49,7 @@ export default function RootLayout({
             <Sidebar />
             <main className="main-content">
               <AdHeader />
-              <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
+              <div className="page-wrapper">
                 {children}
               </div>
             </main>

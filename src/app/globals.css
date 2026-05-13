@@ -1219,10 +1219,25 @@ p { color: var(--text-muted); }
   font-size: 0.88rem;
   font-weight: 700;
   margin-bottom: 2px;
-  word-break: break-word;
+  word-break: normal;
+  overflow-wrap: break-word;
+  white-space: normal;
+  hyphens: none;
 }
 @media (max-width: 768px) {
   .song-card-title { font-size: 0.75rem; }
+}
+
+.page-wrapper {
+  padding: 24px;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+@media (max-width: 768px) {
+  .page-wrapper {
+    padding: 12px;
+  }
 }
 
 /* ─────────────────────────────────────
