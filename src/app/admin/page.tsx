@@ -95,12 +95,15 @@ export default function AdminDashboard() {
         <div className="admin-tabs">
           <button className={activeTab === 'songs' ? 'active' : ''} onClick={() => setActiveTab('songs')}>
             <Music size={16} /><span>Bài hát</span>
+            {songs.length > 0 && <span className="tab-count">{songs.length}</span>}
           </button>
           <button className={activeTab === 'users' ? 'active' : ''} onClick={() => setActiveTab('users')}>
             <Users size={16} /><span>Người dùng</span>
+            {users.length > 0 && <span className="tab-count">{users.length}</span>}
           </button>
           <button className={activeTab === 'ads' ? 'active' : ''} onClick={() => setActiveTab('ads')}>
             <Megaphone size={16} /><span>Quảng cáo</span>
+            {ads.length > 0 && <span className="tab-count">{ads.length}</span>}
           </button>
         </div>
       </header>

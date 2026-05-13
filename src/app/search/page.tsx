@@ -45,6 +45,13 @@ export default function SearchPage() {
         />
       </div>
 
+      {results.length > 0 && (
+        <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+          <h2 style={{ fontSize: '1rem', fontWeight: '800' }}>Kết quả</h2>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{results.length} bài hát</span>
+        </div>
+      )}
+
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', 

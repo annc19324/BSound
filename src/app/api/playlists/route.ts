@@ -11,7 +11,14 @@ export async function GET() {
     
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
 
-    const result = await query('SELECT * FROM playlists WHERE user_id = $1 ORDER BY created_at DESC', [decoded.id]);
+    const result = await query(`
+      SELECT p.*, COUNT(ps.song_id)::int AS song_count
+      FROM playlists p
+      LEFT JOIN playlist_songs ps ON ps.playlist_id = p.id
+      WHERE p.user_id = $1
+      GROUP BY p.id
+      ORDER BY p.created_at DESC
+    `, [decoded.id]);
     return NextResponse.json(result.rows);
   } catch (error) {
     return NextResponse.json({ error: 'Internal Error' }, { status: 500 });
