@@ -32,11 +32,16 @@ async function uploadToCloudinaryDirect(
       };
     }
     xhr.onload = () => {
-      if (xhr.status === 200) {
+      try {
         const res = JSON.parse(xhr.responseText);
-        resolve(res.secure_url);
-      } else {
-        reject(new Error('Upload Cloudinary thất bại'));
+        if (xhr.status === 200) {
+          resolve(res.secure_url);
+        } else {
+          // Show the actual Cloudinary error so we can debug
+          reject(new Error(`Cloudinary: ${res.error?.message || xhr.responseText}`));
+        }
+      } catch {
+        reject(new Error(`Cloudinary lỗi (${xhr.status}): ${xhr.responseText.slice(0, 120)}`));
       }
     };
     xhr.onerror = () => reject(new Error('Lỗi kết nối Cloudinary'));
