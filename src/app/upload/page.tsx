@@ -4,6 +4,46 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Image as ImageIcon, UploadCloud, FileMusic } from 'lucide-react';
 
+// Upload a file directly to Cloudinary using a signed URL from our API
+async function uploadToCloudinaryDirect(
+  file: File,
+  folder: string,
+  onProgress?: (pct: number) => void
+): Promise<string> {
+  // 1. Get signed params from our server
+  const sigRes = await fetch(`/api/songs/upload-signature?folder=${folder}`);
+  if (!sigRes.ok) throw new Error('Không lấy được chữ ký upload');
+  const { signature, timestamp, cloudName, apiKey } = await sigRes.json();
+
+  // 2. Upload directly to Cloudinary (bypasses Vercel completely)
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('api_key', apiKey);
+  fd.append('timestamp', String(timestamp));
+  fd.append('signature', signature);
+  fd.append('folder', folder);
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`);
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+    }
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        const res = JSON.parse(xhr.responseText);
+        resolve(res.secure_url);
+      } else {
+        reject(new Error('Upload Cloudinary thất bại'));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Lỗi kết nối Cloudinary'));
+    xhr.send(fd);
+  });
+}
+
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [image, setImage] = useState<File | null>(null);
@@ -12,6 +52,7 @@ export default function UploadPage() {
   const [artist, setArtist] = useState('');
   const [lyrics, setLyrics] = useState('');
   const [progress, setProgress] = useState(0);
+  const [stage, setStage] = useState('');   // what's currently uploading
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const router = useRouter();
@@ -28,35 +69,48 @@ export default function UploadPage() {
     }
   };
 
-  const handleUpload = (e: React.FormEvent) => {
+  const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage('');
     if (!file) { setMessage('Lỗi: Vui lòng chọn file nhạc.'); return; }
     setLoading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('title', title);
-    formData.append('artist', artist);
-    formData.append('lyrics', lyrics);
-    if (image) formData.append('image', image);
+    setProgress(0);
 
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/songs/upload', true);
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) setProgress(Math.round((event.loaded / event.total) * 100));
-    };
-    xhr.onload = () => {
-      setLoading(false);
-      if (xhr.status === 201) {
+    try {
+      // 1. Upload audio directly to Cloudinary
+      setStage('nhạc');
+      const fileUrl = await uploadToCloudinaryDirect(file, 'bsound', setProgress);
+
+      // 2. Upload image if provided
+      let imageUrl: string | null = null;
+      if (image) {
+        setStage('ảnh bìa');
+        setProgress(0);
+        imageUrl = await uploadToCloudinaryDirect(image, 'bsound_images');
+      }
+
+      // 3. Save metadata to our DB (tiny JSON request — no 413 risk)
+      setStage('lưu bài');
+      const res = await fetch('/api/songs/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, artist, lyrics, fileUrl, imageUrl }),
+      });
+
+      if (res.ok) {
         setMessage('Đăng nhạc thành công! Đang chuyển hướng...');
         setTimeout(() => router.push('/'), 1500);
       } else {
-        const data = JSON.parse(xhr.responseText);
+        const data = await res.json();
         setMessage(`Lỗi: ${data.error || 'Đã có lỗi xảy ra'}`);
       }
-    };
-    xhr.onerror = () => { setLoading(false); setMessage('Lỗi kết nối.'); };
-    xhr.send(formData);
+    } catch (err: any) {
+      setMessage(`Lỗi: ${err.message}`);
+    } finally {
+      setLoading(false);
+      setStage('');
+      setProgress(0);
+    }
   };
 
   return (
@@ -140,7 +194,7 @@ export default function UploadPage() {
             {loading ? (
               <>
                 <span className="spin" />
-                Đang tải lên {progress}%
+                Đang tải {stage} {progress > 0 ? `${progress}%` : '...'}
               </>
             ) : (
               <>
@@ -154,7 +208,6 @@ export default function UploadPage() {
           )}
         </div>
       </form>
-
     </div>
   );
 }
