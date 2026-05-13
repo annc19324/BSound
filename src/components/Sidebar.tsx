@@ -151,7 +151,7 @@ export default function Sidebar() {
           <Link href="/chat" className="sb-chat-link" onClick={close}>
             <MessageSquare size={16} />
             <span>Kênh Chat Tổng</span>
-            {notif.messages > 0 && <span className="sb-badge">{notif.messages > 99 ? '99+' : notif.messages}</span>}
+            {notif.messages > 0 && <span className="sb-badge sb-badge-error">{notif.messages > 99 ? '99+' : notif.messages}</span>}
           </Link>
         </div>
 

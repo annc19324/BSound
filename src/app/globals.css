@@ -1453,6 +1453,10 @@ p { color: var(--text-muted); }
   background: var(--primary);
   color: #000;
 }
+.sb-badge-error {
+  background: #ff4444;
+  color: white;
+}
 
 /* FAB notification dot */
 .fab-menu { position: relative; }

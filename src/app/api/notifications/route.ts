@@ -12,8 +12,11 @@ export async function GET() {
 
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
 
-    // Latest message count (new messages since user's last-seen, use total for now)
-    const msgRes = await query('SELECT COUNT(*) FROM messages');
+    // Count messages created after user's last_seen_chat
+    const msgRes = await query(`
+      SELECT COUNT(*) FROM messages 
+      WHERE created_at > (SELECT last_seen_chat FROM users WHERE id = $1)
+    `, [decoded.id]);
     const messages = parseInt(msgRes.rows[0].count);
 
     let pending = 0;
