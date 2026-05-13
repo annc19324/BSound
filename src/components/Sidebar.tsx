@@ -17,12 +17,30 @@ export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Draggable FAB state
-  const [fabPos, setFabPos] = useState({ x: 16, y: -1 });
+  // Draggable FAB state - Default position at TOP
+  const [fabPos, setFabPos] = useState({ x: 20, y: 80 });
   const dragging = useRef(false);
   const startTouch = useRef({ x: 0, y: 0, fabX: 0, fabY: 0 });
   const fabRef = useRef<HTMLButtonElement>(null);
   const didDrag = useRef(false);
+
+  // Load persisted FAB position on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('bsound_fab_pos');
+    if (saved) {
+      try {
+        const pos = JSON.parse(saved);
+        if (typeof pos.x === 'number' && typeof pos.y === 'number') setFabPos(pos);
+      } catch (e) {}
+    }
+  }, []);
+
+  // Save position whenever it changes
+  useEffect(() => {
+    if (fabPos.y !== -1) {
+      localStorage.setItem('bsound_fab_pos', JSON.stringify(fabPos));
+    }
+  }, [fabPos]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -94,7 +112,7 @@ export default function Sidebar() {
         <button
           ref={fabRef}
           className="fab-menu"
-          style={fabPos.y >= 0 ? { left: fabPos.x, bottom: 'auto', top: fabPos.y } : {}}
+          style={{ left: fabPos.x, top: fabPos.y, bottom: 'auto' }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}

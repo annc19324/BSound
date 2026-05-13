@@ -1104,14 +1104,14 @@ p { color: var(--text-muted); }
     align-items: center;
     justify-content: center;
     position: fixed;
-    bottom: 180px;   /* above player bar */
+    top: 80px;      /* Default at top */
     left: 16px;
     width: 52px;
     height: 52px;
     border-radius: 50%;
     background: var(--primary);
     color: #000;
-    z-index: 600;
+    z-index: 9999;  /* Highest z-index */
     box-shadow: 0 4px 20px rgba(243, 186, 47, 0.5);
     cursor: grab;
     touch-action: none; /* allow pointer events */
@@ -1119,6 +1119,41 @@ p { color: var(--text-muted); }
   }
   .fab-menu:active { cursor: grabbing; box-shadow: 0 6px 28px rgba(243, 186, 47, 0.7); }
 }
+
+/* Pull to Refresh Indicator */
+.ptr-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  pointer-events: none;
+  transition: transform 0.1s ease;
+}
+.ptr-circle {
+  background: var(--primary);
+  color: black;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  margin-top: -50px; /* Hidden initially */
+}
+.ptr-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(0,0,0,0.1);
+  border-top-color: black;
+  border-radius: 50%;
+  animation: ptr-spin 0.8s linear infinite;
+}
+@keyframes ptr-spin { to { transform: rotate(360deg); } }
 
 /* ─────────────────────────────────────
    Song Grid — responsive 3-col mobile
