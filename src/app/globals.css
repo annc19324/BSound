@@ -677,6 +677,7 @@ p { color: var(--text-muted); }
 .field input,
 .field textarea {
   width: 100%;
+  min-width: 0;
   padding: 10px 14px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.09);
@@ -686,7 +687,11 @@ p { color: var(--text-muted); }
   font-size: 0.88rem;
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
   outline: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+.field textarea { white-space: normal; } /* override for textarea */
 .field textarea { height: 90px; resize: none; }
 .field input:focus,
 .field textarea:focus {
@@ -709,10 +714,13 @@ p { color: var(--text-muted); }
   transition: border-color 0.2s, background 0.2s;
   color: rgba(255, 255, 255, 0.4);
   font-size: 0.82rem;
+  min-width: 0;        /* allow flex child to shrink */
+  overflow: hidden;    /* clip any overflow at container level */
 }
 .file-picker:hover { border-color: rgba(243, 186, 47, 0.45); background: rgba(243, 186, 47, 0.03); }
 .file-picker.has-file { border-color: var(--primary); border-style: solid; color: var(--primary); background: rgba(243, 186, 47, 0.05); }
-.file-picker span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-picker svg { flex-shrink: 0; }  /* keep icon always visible */
+.file-picker span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .submit-area { padding-top: 4px; }
 .submit-btn {
