@@ -2,8 +2,10 @@ import { query } from '@/lib/db';
 import Link from 'next/link';
 import SongGrid from '@/components/SongGrid';
 
-// Server Component — data fetched at request time on the server
-// No useEffect, no loading delay, HTML arrives with data already embedded
+// ISR: serve cached page instantly, refresh from DB every 30 seconds in background
+// New songs will appear within ~30 seconds of being approved — no full redeploy needed
+export const revalidate = 30;
+
 export default async function Home() {
   // Fetch songs and playlists in parallel directly from DB
   const [songsRes, playlistsRes] = await Promise.all([
