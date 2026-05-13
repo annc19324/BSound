@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { query } from '@/lib/db';
 import { sendApprovalNotification } from '@/lib/mail';
+import { revalidatePath } from 'next/cache';
 
 // This endpoint now only receives metadata + Cloudinary URLs (no file buffers)
 // Files are uploaded directly from the client to Cloudinary using a signed signature
@@ -35,6 +36,9 @@ export async function POST(request: Request) {
     if (status === 'PENDING') {
       await sendApprovalNotification(title, artist);
     }
+
+    // Invalidate homepage cache so new song appears immediately
+    revalidatePath('/');
 
     return NextResponse.json(result.rows[0], { status: 201 });
   } catch (error: any) {
