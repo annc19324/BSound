@@ -86,7 +86,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const audio = new Audio();
     audio.crossOrigin = "anonymous"; // Needed for Web Audio API with external URLs
-    audio.playsInline = true;        // Help iOS Safari with background play
+    (audio as any).playsInline = true;        // Help iOS Safari with background play
     audioRef.current = audio;
 
     const handleTimeUpdate = () => setProgress(audio.currentTime);
