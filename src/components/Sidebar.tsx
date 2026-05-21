@@ -183,9 +183,11 @@ export default function Sidebar() {
         </nav>
 
         {/* ── Ủng hộ ── */}
-        <div className="sb-section" style={{ padding: '10px 12px' }}>
-          <div className="sb-label" style={{ padding: '0 0 8px 0' }}>Ủng hộ BSound</div>
-          <img src="/qr.jpg" alt="Donate QR" style={{ width: '100%', borderRadius: '8px', border: '1px solid var(--glass-border)' }} />
+        <div className="sb-section" style={{ padding: '4px 2px' }}>
+          <Link href="/donate" className="sb-chat-link" onClick={close} style={{ color: '#ff4444', borderColor: 'rgba(255, 68, 68, 0.2)', background: 'rgba(255, 68, 68, 0.08)' }}>
+            <Heart size={16} fill="currentColor" />
+            <span>Ủng hộ BSound</span>
+          </Link>
         </div>
 
         {/* ── Personal ── */}
