@@ -2,9 +2,8 @@ import { query } from '@/lib/db';
 import Link from 'next/link';
 import SongGrid from '@/components/SongGrid';
 
-// ISR: serve cached page instantly, refresh from DB every 30 seconds in background
-// New songs will appear within ~30 seconds of being approved — no full redeploy needed
-export const revalidate = 30;
+// Bypass build-time prerendering since DB might not be accessible during build
+export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   // Fetch songs and playlists in parallel directly from DB
