@@ -9,9 +9,8 @@ export default function AdHeader() {
     fetch('/api/admin/ads')
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) {
-          const activeAd = data.find(item => item.active);
-          setAd(activeAd || null);
+        if (Array.isArray(data) && data.length > 0) {
+          setAd(data[0]);
         } else {
           setAd(null);
         }
@@ -19,7 +18,7 @@ export default function AdHeader() {
       .catch(() => {});
   }, []);
 
-  if (!ad || !ad.active) return null;
+  if (!ad) return null;
 
   return (
     <div className="ad-header" style={{

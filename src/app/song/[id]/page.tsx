@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState, use } from 'react';
 import { usePlayer } from '@/context/PlayerContext';
-import { Play, ThumbsUp, ThumbsDown, MessageSquare, User, Send } from 'lucide-react';
+import { Play, ThumbsUp, ThumbsDown, MessageSquare, User, Send, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function SongPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -12,6 +13,7 @@ export default function SongPage({ params }: { params: Promise<{ id: string }> }
   const [newComment, setNewComment] = useState('');
   const [userInteraction, setUserInteraction] = useState<'LIKE' | 'DISLIKE' | null>(null);
   const { playSong } = usePlayer();
+  const router = useRouter();
 
   useEffect(() => {
     fetch(`/api/songs/${id}`).then(r => r.json()).then(setSong);
@@ -90,6 +92,9 @@ export default function SongPage({ params }: { params: Promise<{ id: string }> }
     <div className="fade-in song-detail-root">
       {/* ── Main content ── */}
       <div className="song-detail-main">
+        <button onClick={() => router.back()} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>
+          <ArrowLeft size={18} /> Quay lại
+        </button>
         {/* Header */}
         <div className="song-header">
           <div className="song-artwork">

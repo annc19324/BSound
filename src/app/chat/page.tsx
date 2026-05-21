@@ -121,7 +121,7 @@ export default function ChatPage() {
       </form>
 
       <style jsx>{`
-        .chat-container { max-width: 900px; margin: 0 auto; height: calc(100vh - 200px); display: flex; flex-direction: column; gap: 20px; }
+        .chat-container { max-width: 1200px; width: 100%; margin: 0 auto; height: calc(100vh - 120px); display: flex; flex-direction: column; gap: 20px; }
         .chat-header { padding: 20px; display: flex; align-items: center; gap: 16px; border-radius: 20px; }
         .chat-header h1 { margin: 0; font-size: 1.5rem; }
         .chat-header p { margin: 0; font-size: 0.85rem; color: var(--text-muted); }

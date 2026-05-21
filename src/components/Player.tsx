@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { usePlayer } from '@/context/PlayerContext';
+import { useRouter } from 'next/navigation';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Gauge, Download, Shuffle, Repeat, Repeat1, ThumbsUp, ThumbsDown } from 'lucide-react';
 
 export default function Player() {
@@ -11,6 +11,7 @@ export default function Player() {
     setSleepTimer, remainingTime,
     isShuffle, toggleShuffle, repeatMode, toggleRepeat, nextSong, prevSong
   } = usePlayer();
+  const router = useRouter();
 
   const [showTimerMenu, setShowTimerMenu] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
@@ -69,7 +70,7 @@ export default function Player() {
       {/* ── Row 1: Song info + play controls + right section ── */}
       <div className="player-row1">
         {/* Song Info */}
-        <div className="player-song-info">
+        <div className="player-song-info" onClick={() => router.push(`/song/${currentSong.id}`)} style={{ cursor: 'pointer' }}>
           <div className="player-thumb">
             {currentSong.image_url
               ? <img src={currentSong.image_url} alt={currentSong.title} />
@@ -81,6 +82,7 @@ export default function Player() {
             <div className="player-artist">{currentSong.artist}</div>
             {currentSong.uploader_id && currentSong.uploader_name && (
               <a href={`/user/${currentSong.uploader_id}`}
+                onClick={(e) => e.stopPropagation()}
                 style={{ fontSize: '0.62rem', color: 'var(--primary)', fontWeight: '700', opacity: 0.85, textDecoration: 'none' }}>
                 @{currentSong.uploader_name}
               </a>
@@ -91,7 +93,7 @@ export default function Player() {
         {/* Playback Controls */}
         <div className="player-controls">
           <button onClick={toggleShuffle} title="Shuffle" className="hide-mobile">
-            <Shuffle size={18} color={isShuffle ? 'var(--primary)' : 'var(--text-muted)'} />
+            <Shuffle size={22} color={isShuffle ? 'var(--primary)' : 'var(--text-muted)'} />
           </button>
           <button onClick={prevSong}><SkipBack size={22} fill="currentColor" /></button>
           <button onClick={togglePlay} className="play-btn">
@@ -99,7 +101,7 @@ export default function Player() {
           </button>
           <button onClick={nextSong}><SkipForward size={22} fill="currentColor" /></button>
           <button onClick={toggleRepeat} title="Repeat" className="hide-mobile">
-            {repeatMode === 'ONE' ? <Repeat1 size={18} color="var(--primary)" /> : <Repeat size={18} color={repeatMode === 'ALL' ? 'var(--primary)' : 'var(--text-muted)'} />}
+            {repeatMode === 'ONE' ? <Repeat1 size={22} color="var(--primary)" /> : <Repeat size={22} color={repeatMode === 'ALL' ? 'var(--primary)' : 'var(--text-muted)'} />}
           </button>
         </div>
 
@@ -110,18 +112,18 @@ export default function Player() {
             <button onClick={() => handleInteraction('LIKE')} title="Thích"
               style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', fontWeight: '700',
                 color: userInteraction === 'LIKE' ? 'var(--primary)' : 'var(--text-muted)', transition: '0.2s' }}>
-              <ThumbsUp size={15} fill={userInteraction === 'LIKE' ? 'var(--primary)' : 'none'} />
+              <ThumbsUp size={20} fill={userInteraction === 'LIKE' ? 'var(--primary)' : 'none'} />
               {likes}
             </button>
             <button onClick={() => handleInteraction('DISLIKE')} title="Không thích"
               style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', fontWeight: '700',
                 color: userInteraction === 'DISLIKE' ? '#ff6b6b' : 'var(--text-muted)', transition: '0.2s' }}>
-              <ThumbsDown size={15} fill={userInteraction === 'DISLIKE' ? '#ff6b6b' : 'none'} />
+              <ThumbsDown size={20} fill={userInteraction === 'DISLIKE' ? '#ff6b6b' : 'none'} />
               {dislikes}
             </button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Volume2 size={18} color={volume > 1 ? 'var(--primary)' : 'currentColor'} />
+            <Volume2 size={22} color={volume > 1 ? 'var(--primary)' : 'currentColor'} />
             <input type="range" min="0" max="2" step="0.01" value={volume}
               onChange={(e) => setVolume(parseFloat(e.target.value))}
               style={{ width: '80px', accentColor: 'var(--primary)', height: '4px' }}
@@ -131,7 +133,7 @@ export default function Player() {
             </span>
           </div>
           <a href={currentSong.file_url} download title="Download" style={{ opacity: 0.8 }}>
-            <Download size={18} />
+            <Download size={22} />
           </a>
         </div>
       </div>
@@ -151,7 +153,7 @@ export default function Player() {
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <button onClick={() => setShowSpeedMenu(!showSpeedMenu)} title="Speed"
             style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: playbackSpeed !== 1 ? 'var(--primary)' : 'inherit' }}>
-            <Gauge size={16} /> {playbackSpeed}x
+            <Gauge size={20} /> {playbackSpeed}x
           </button>
           {showSpeedMenu && (
             <div className="glass" style={{ position: 'absolute', bottom: '130%', right: 0, padding: '8px', minWidth: '100px', zIndex: 200 }}>
@@ -169,7 +171,7 @@ export default function Player() {
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <button onClick={() => setShowTimerMenu(!showTimerMenu)} title="Sleep Timer"
             style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-            <Timer size={16} color={remainingTime ? 'var(--primary)' : 'currentColor'} />
+            <Timer size={20} color={remainingTime ? 'var(--primary)' : 'currentColor'} />
             {remainingTime ? <span style={{ fontSize: '0.7rem', color: 'var(--primary)' }}>{Math.ceil(remainingTime / 60)}m</span> : null}
           </button>
           {showTimerMenu && (
@@ -194,7 +196,7 @@ export default function Player() {
       {/* ── Row 3: Mobile only — Volume + Shuffle + Repeat + Download ── */}
       <div className="player-row3-mobile">
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Volume2 size={15} color={volume > 1 ? 'var(--primary)' : 'var(--text-muted)'} />
+          <Volume2 size={22} color={volume > 1 ? 'var(--primary)' : 'var(--text-muted)'} />
           <input type="range" min="0" max="2" step="0.01" value={volume}
             onChange={(e) => setVolume(parseFloat(e.target.value))}
             style={{ width: '70px', accentColor: 'var(--primary)', height: '3px' }}
@@ -205,18 +207,18 @@ export default function Player() {
         </div>
 
         <button onClick={toggleShuffle} title="Shuffle" style={{ padding: '4px' }}>
-          <Shuffle size={17} color={isShuffle ? 'var(--primary)' : 'var(--text-muted)'} />
+          <Shuffle size={22} color={isShuffle ? 'var(--primary)' : 'var(--text-muted)'} />
         </button>
 
         <button onClick={toggleRepeat} title="Repeat" style={{ padding: '4px' }}>
           {repeatMode === 'ONE'
-            ? <Repeat1 size={17} color="var(--primary)" />
-            : <Repeat size={17} color={repeatMode === 'ALL' ? 'var(--primary)' : 'var(--text-muted)'} />
+            ? <Repeat1 size={22} color="var(--primary)" />
+            : <Repeat size={22} color={repeatMode === 'ALL' ? 'var(--primary)' : 'var(--text-muted)'} />
           }
         </button>
 
         <a href={currentSong.file_url} download title="Download" style={{ opacity: 0.75, padding: '4px', color: 'inherit' }}>
-          <Download size={17} />
+          <Download size={22} />
         </a>
       </div>
 

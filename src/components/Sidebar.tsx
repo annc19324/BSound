@@ -182,6 +182,12 @@ export default function Sidebar() {
           <Link href="/library" className={`sb-item ${isActive('/library')}`} onClick={close}><Library size={18} /> Thư viện</Link>
         </nav>
 
+        {/* ── Ủng hộ ── */}
+        <div className="sb-section" style={{ padding: '10px 12px' }}>
+          <div className="sb-label" style={{ padding: '0 0 8px 0' }}>Ủng hộ BSound</div>
+          <img src="/qr.jpg" alt="Donate QR" style={{ width: '100%', borderRadius: '8px', border: '1px solid var(--glass-border)' }} />
+        </div>
+
         {/* ── Personal ── */}
         <div className="sb-section">
           <div className="sb-label">Cá nhân</div>

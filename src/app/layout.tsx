@@ -6,7 +6,6 @@ import Player from "@/components/Player";
 import Sidebar from "@/components/Sidebar";
 import AdHeader from "@/components/AdHeader";
 import { Toaster } from "react-hot-toast";
-import PullToRefresh from "@/components/PullToRefresh";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -62,7 +61,6 @@ export default function RootLayout({
             }}
           />
           <div className="app-container">
-            <PullToRefresh />
             <Sidebar />
             <main className="main-content">
               <AdHeader />

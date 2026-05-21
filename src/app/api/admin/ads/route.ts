@@ -34,7 +34,13 @@ export async function POST(request: Request) {
   }
 }
 
-export async function DELETE() {
-    await query('UPDATE ads SET active = FALSE');
+export async function DELETE(request: Request) {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    if (id) {
+        await query('DELETE FROM ads WHERE id = $1', [id]);
+    } else {
+        await query('UPDATE ads SET active = FALSE');
+    }
     return NextResponse.json({ success: true });
 }
