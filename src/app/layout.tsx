@@ -13,7 +13,24 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "BSound - B Ray Sounds",
   description: "tracks of B Ray",
-  icons: { icon: '/bsound.png' },
+  icons: { 
+    icon: '/bsound.png',
+    apple: '/bsound.png'
+  },
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'BSound',
+  },
+};
+
+export const viewport = {
+  themeColor: '#000000',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
