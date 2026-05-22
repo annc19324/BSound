@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usePlayer } from '@/context/PlayerContext';
 import { MoreVertical, Heart, Headphones, Music } from 'lucide-react';
 import Link from 'next/link';
@@ -25,6 +25,39 @@ interface Props { songs: Song[]; playlists: Playlist[]; }
 export default function SongGrid({ songs, playlists }: Props) {
   const [showMenu, setShowMenu] = useState<number | null>(null);
   const { playSong, currentSong } = usePlayer();
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+
+    let startY = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      startY = e.touches[0].clientY;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const mainContent = document.querySelector('.main-content');
+      if (!mainContent) return;
+
+      const y = e.touches[0].clientY;
+      const isPullingDown = y > startY;
+
+      // Prevent pull-to-refresh if pulling down while at the top of the scroll container
+      if (isPullingDown && mainContent.scrollTop <= 0) {
+        e.preventDefault();
+      }
+    };
+
+    grid.addEventListener('touchstart', handleTouchStart, { passive: true });
+    grid.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+    return () => {
+      grid.removeEventListener('touchstart', handleTouchStart);
+      grid.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, []);
 
   const addToPlaylist = async (songId: number, playlistId: number) => {
     const res = await fetch(`/api/playlists/${playlistId}`, {
@@ -45,7 +78,7 @@ export default function SongGrid({ songs, playlists }: Props) {
   }
 
   return (
-    <div className="song-grid">
+    <div className="song-grid" ref={gridRef}>
       {songs.map((song) => {
         const isActive = currentSong?.id === song.id;
         return (

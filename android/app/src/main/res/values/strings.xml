@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">BSound</string>
+    <string name="title_activity_main">BSound</string>
+    <string name="package_name">com.bsound.app</string>
+    <string name="custom_url_scheme">com.bsound.app</string>
+</resources>
