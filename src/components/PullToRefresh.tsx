@@ -18,8 +18,12 @@ export default function PullToRefresh() {
         return;
       }
 
-      // Only pull if we are at the top of the page
-      if (window.scrollY === 0) {
+      // Lấy phần tử cuộn chính xác
+      const mainContent = document.querySelector('.main-content');
+      const scrollTop = mainContent ? mainContent.scrollTop : window.scrollY;
+
+      // Only pull if we are at the top of the container
+      if (scrollTop <= 0) {
         startY.current = e.touches[0].clientY;
       } else {
         startY.current = -1;

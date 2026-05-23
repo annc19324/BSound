@@ -7,6 +7,8 @@ import Sidebar from "@/components/Sidebar";
 import AdHeader from "@/components/AdHeader";
 import { Toaster } from "react-hot-toast";
 
+import PullToRefresh from "@/components/PullToRefresh";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -63,6 +65,7 @@ export default function RootLayout({
           <div className="app-container">
             <Sidebar />
             <main className="main-content">
+              <PullToRefresh />
               <AdHeader />
               <div className="page-wrapper">
                 {children}

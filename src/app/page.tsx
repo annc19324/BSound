@@ -2,6 +2,7 @@ import { query } from '@/lib/db';
 import Link from 'next/link';
 import SongGrid from '@/components/SongGrid';
 import DownloadAppButton from '@/components/DownloadAppButton';
+import RefreshButton from '@/components/RefreshButton';
 
 // Bypass build-time prerendering since DB might not be accessible during build
 export const dynamic = 'force-dynamic';
@@ -26,8 +27,9 @@ export default async function Home() {
     <div className="fade-in">
       <header style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '900', letterSpacing: '-1px', lineHeight: 1, margin: 0 }}>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '2.5rem', fontWeight: '900', letterSpacing: '-1px', lineHeight: 1, margin: 0 }}>
             B <span style={{ color: 'var(--primary)' }}>Sound</span>
+            <RefreshButton />
           </h1>
           <DownloadAppButton />
         </div>
