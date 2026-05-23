@@ -51,7 +51,7 @@ export default async function Home() {
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
-            Tải App
+            Tải app cho Android
           </a>
         </div>
         <form action="/search" style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', padding: '10px 20px', border: '1px solid var(--glass-border)', flex: 1, minWidth: '200px', maxWidth: '400px' }}>
