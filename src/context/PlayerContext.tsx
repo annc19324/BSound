@@ -87,6 +87,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
     const audio = new Audio();
     audio.crossOrigin = "anonymous"; // Needed for Web Audio API with external URLs
     (audio as any).playsInline = true;        // Help iOS Safari with background play
+    document.body.appendChild(audio); // BẮT BUỘC để Android hiện Media Controls ở thanh thông báo
     audioRef.current = audio;
 
     const handleTimeUpdate = () => setProgress(audio.currentTime);
@@ -109,6 +110,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('ended', handleEndedLocal);
+      document.body.removeChild(audio);
       audioRef.current = null;
     };
   }, []);
@@ -165,6 +167,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
             { src: song.image_url, sizes: '512x512', type: 'image/png' }
           ] : []
         });
+        navigator.mediaSession.playbackState = 'playing';
       }
     }
   };
@@ -172,8 +175,8 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
   // Setup Media Session Handlers
   useEffect(() => {
     if ('mediaSession' in navigator) {
-      navigator.mediaSession.setActionHandler('play', () => { safePlay(); setIsPlaying(true); });
-      navigator.mediaSession.setActionHandler('pause', () => { if (audioRef.current) audioRef.current.pause(); setIsPlaying(false); });
+      navigator.mediaSession.setActionHandler('play', () => { safePlay(); setIsPlaying(true); navigator.mediaSession.playbackState = 'playing'; });
+      navigator.mediaSession.setActionHandler('pause', () => { if (audioRef.current) audioRef.current.pause(); setIsPlaying(false); navigator.mediaSession.playbackState = 'paused'; });
       navigator.mediaSession.setActionHandler('previoustrack', () => prevSong());
       navigator.mediaSession.setActionHandler('nexttrack', () => nextSong());
     }
@@ -207,8 +210,13 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
 
   const togglePlay = () => {
     if (audioRef.current) {
-      if (isPlaying) audioRef.current.pause();
-      else safePlay();
+      if (isPlaying) {
+        audioRef.current.pause();
+        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+      } else {
+        safePlay();
+        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+      }
       setIsPlaying(!isPlaying);
     }
   };

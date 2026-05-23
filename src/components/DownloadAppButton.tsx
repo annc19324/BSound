@@ -6,8 +6,14 @@ export default function DownloadAppButton() {
   const [isApp, setIsApp] = useState(true); // Mặc định ẩn để tránh nháy màn hình (Hydration mismatch)
 
   useEffect(() => {
-    // Kiểm tra xem có đang chạy trong app Capacitor (Android) không
-    const isCapacitor = typeof window !== 'undefined' && ((window as any).Capacitor?.isNative || navigator.userAgent.includes('Capacitor'));
+    // Kiểm tra xem có đang chạy trong app Capacitor hoặc Android WebView không
+    const ua = navigator.userAgent.toLowerCase();
+    const isCapacitor = typeof window !== 'undefined' && (
+      (window as any).Capacitor?.isNative || 
+      ua.includes('capacitor') || 
+      ua.includes('wv') || // Dấu hiệu đặc trưng nhất của Android WebView
+      (ua.includes('android') && ua.includes('version/')) // WebView mặc định trên một số bản Android
+    );
     setIsApp(!!isCapacitor);
   }, []);
 

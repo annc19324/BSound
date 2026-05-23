@@ -11,8 +11,9 @@ export default function PullToRefresh() {
 
   useEffect(() => {
     const handleTouchStart = (e: TouchEvent) => {
-      // Ignore if touching the FAB menu
-      if ((e.target as Element).closest('.fab-menu')) {
+      const target = e.target as Element;
+      // Bỏ qua kéo thả refresh nếu chạm vào nút menu hoặc thẻ bài hát
+      if (target.closest('.fab-menu') || target.closest('.song-card') || target.closest('.song-grid') || target.closest('.player-bar')) {
         startY.current = -1;
         return;
       }
