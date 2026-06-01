@@ -82,10 +82,14 @@ export default function SongGrid({ songs, playlists }: Props) {
       {songs.map((song) => {
         const isActive = currentSong?.id === song.id;
         return (
-          <div key={song.id} className={`song-card ${isActive ? 'song-card-active' : ''}`} style={{ position: 'relative' }}>
+          <div 
+            key={song.id} 
+            className={`song-card ${isActive ? 'song-card-active' : ''}`} 
+            style={{ position: 'relative', cursor: 'pointer' }}
+            onClick={() => playSong(song, songs)}
+          >
             {/* Cover art */}
             <div
-              onClick={() => playSong(song, songs)}
               className={`song-cover ${isActive ? 'song-cover-active' : ''}`}
             >
               {song.image_url
@@ -100,10 +104,10 @@ export default function SongGrid({ songs, playlists }: Props) {
             {/* Info row */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '6px' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <Link href={`/song/${song.id}`}>
+                <div>
                   <div className="song-card-title">{song.title}</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '2px' }}>{song.artist}</div>
-                </Link>
+                </div>
                 {/* Uploader */}
                 {song.uploader_id && song.uploader_name && (
                   <Link href={`/user/${song.uploader_id}`}

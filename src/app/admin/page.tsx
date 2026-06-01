@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Music, Users, Megaphone, Check, X, Trash2, Edit2, Save, Camera } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { usePlayer } from '@/context/PlayerContext';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'songs' | 'users' | 'ads'>('songs');
@@ -16,6 +17,7 @@ export default function AdminDashboard() {
   const [editImage, setEditImage] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const router = useRouter();
+  const { playSong } = usePlayer();
 
   useEffect(() => { fetchData(); }, [activeTab]);
 
@@ -168,7 +170,7 @@ export default function AdminDashboard() {
             {activeTab === 'songs' && (
               <div className="admin-cards">
                 {songs.map(s => (
-                  <div key={s.id} className="admin-card">
+                  <div key={s.id} className="admin-card" onClick={() => playSong(s)} style={{ cursor: 'pointer' }}>
                     <img
                       src={s.image_url || '/bsound.png'}
                       className="admin-card-img"
@@ -179,7 +181,7 @@ export default function AdminDashboard() {
                       <div className="admin-card-sub">{s.artist}</div>
                       <span className={`status-badge ${s.status.toLowerCase()}`}>{s.status}</span>
                     </div>
-                    <div className="admin-card-actions">
+                    <div className="admin-card-actions" onClick={e => e.stopPropagation()}>
                       {s.status === 'PENDING' && (
                         <button onClick={() => updateSongStatus(s.id, 'APPROVED')} className="btn-approve" title="Duyệt">
                           <Check size={15} />

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePlayer } from '@/context/PlayerContext';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Gauge, Download, Shuffle, Repeat, Repeat1, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Gauge, Download, Shuffle, Repeat, Repeat1, ThumbsUp, ThumbsDown, Mic2 } from 'lucide-react';
 
 export default function Player() {
   const { 
@@ -21,6 +21,73 @@ export default function Player() {
   const [dislikes, setDislikes] = useState(0);
   const [userInteraction, setUserInteraction] = useState<'LIKE' | 'DISLIKE' | null>(null);
   const viewedSongId = useRef<number | null>(null);
+
+  // Lyrics states
+  const [showLyricsModal, setShowLyricsModal] = useState(false);
+  const [lyrics, setLyricsText] = useState('');
+  const [loadingLyrics, setLoadingLyrics] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Load lyrics when modal opens or active song changes
+  useEffect(() => {
+    if (showLyricsModal && currentSong) {
+      if (currentSong.lyrics) {
+        setLyricsText(currentSong.lyrics);
+      } else {
+        setLoadingLyrics(true);
+        fetch(`/api/songs/${currentSong.id}`)
+          .then(res => res.json())
+          .then(data => {
+            setLyricsText(data.lyrics || '');
+          })
+          .catch(err => {
+            console.error("Failed to load lyrics", err);
+          })
+          .finally(() => {
+            setLoadingLyrics(false);
+          });
+      }
+    }
+  }, [showLyricsModal, currentSong?.id]);
+
+  const handleCopyLyrics = () => {
+    if (!lyrics) return;
+    navigator.clipboard.writeText(lyrics);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!currentSong) return;
+
+    try {
+      const url = currentSong.file_url;
+      if (url.includes('res.cloudinary.com')) {
+        const downloadUrl = url.replace('/upload/', '/upload/fl_attachment/');
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = `${currentSong.title} - ${currentSong.artist}.mp3`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `${currentSong.title} - ${currentSong.artist}.mp3`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(blobUrl);
+      }
+    } catch (err) {
+      console.error('Direct download failed, falling back to open in new tab', err);
+      window.open(currentSong.file_url, '_blank');
+    }
+  };
 
   // When song changes: load interaction state + increment view once
   useEffect(() => {
@@ -123,6 +190,11 @@ export default function Player() {
               {dislikes}
             </button>
           </div>
+          {/* Lyrics Icon before Volume */}
+          <button onClick={() => setShowLyricsModal(true)} title="Xem lời bài hát" style={{ opacity: 0.8, color: 'inherit', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }}>
+            <Mic2 size={22} />
+          </button>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Volume2 size={22} color={volume > 1 ? 'var(--primary)' : 'currentColor'} />
             <input type="range" min="0" max="2" step="0.01" value={volume}
@@ -133,9 +205,9 @@ export default function Player() {
               {Math.round(volume * 100)}%
             </span>
           </div>
-          <a href={currentSong.file_url} download title="Download" style={{ opacity: 0.8 }}>
+          <button onClick={handleDownload} title="Download" style={{ opacity: 0.8, color: 'inherit' }}>
             <Download size={22} />
-          </a>
+          </button>
         </div>
       </div>
 
@@ -196,6 +268,11 @@ export default function Player() {
 
       {/* ── Row 3: Mobile only — Volume + Shuffle + Repeat + Download ── */}
       <div className="player-row3-mobile">
+        {/* Lyrics Icon on Mobile before Volume */}
+        <button onClick={() => setShowLyricsModal(true)} title="Xem lời bài hát" style={{ opacity: 0.8, padding: '4px', color: 'inherit', display: 'flex', alignItems: 'center' }}>
+          <Mic2 size={22} />
+        </button>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Volume2 size={22} color={volume > 1 ? 'var(--primary)' : 'var(--text-muted)'} />
           <input type="range" min="0" max="2" step="0.01" value={volume}
@@ -218,10 +295,62 @@ export default function Player() {
           }
         </button>
 
-        <a href={currentSong.file_url} download title="Download" style={{ opacity: 0.75, padding: '4px', color: 'inherit' }}>
+        <button onClick={handleDownload} title="Download" style={{ opacity: 0.75, padding: '4px', color: 'inherit' }}>
           <Download size={22} />
-        </a>
+        </button>
       </div>
+
+      {/* ── Lyric Modal ── */}
+      {showLyricsModal && (
+        <div className="modal-overlay" onClick={() => setShowLyricsModal(false)} style={{ zIndex: 10000 }}>
+          <div className="modal-content glass" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="modal-header" style={{ borderBottom: '1px solid var(--glass-border)', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'white', fontWeight: 800 }}>{currentSong.title}</h2>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>{currentSong.artist}</p>
+              </div>
+              <button onClick={() => setShowLyricsModal(false)} style={{ fontSize: '1.5rem', color: 'var(--text-muted)', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = 'white'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}>
+                &times;
+              </button>
+            </div>
+            
+            <div style={{ maxHeight: '350px', overflowY: 'auto', paddingRight: '6px', whiteSpace: 'pre-wrap', lineHeight: 1.8, fontSize: '0.95rem', color: '#e5e5e5' }}>
+              {loadingLyrics ? (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '30px' }}>
+                  <div className="loader" style={{ width: '30px', height: '30px' }} />
+                </div>
+              ) : lyrics ? (
+                lyrics
+              ) : (
+                <p style={{ color: 'var(--text-muted)', textAlign: 'center', fontStyle: 'italic' }}>Chưa có lời bài hát.</p>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--glass-border)', paddingTop: '12px', gap: '8px' }}>
+              <button 
+                onClick={handleCopyLyrics} 
+                disabled={!lyrics}
+                style={{ 
+                  background: copied ? 'rgba(0, 255, 100, 0.12)' : 'var(--primary)', 
+                  color: copied ? '#00e676' : 'black', 
+                  fontWeight: 800, 
+                  padding: '8px 16px', 
+                  borderRadius: '10px', 
+                  fontSize: '0.85rem', 
+                  transition: 'all 0.2s', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px',
+                  cursor: lyrics ? 'pointer' : 'not-allowed',
+                  opacity: lyrics ? 1 : 0.5
+                }}
+              >
+                {copied ? 'Đã sao chép!' : 'Copy Lời bài hát'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
