@@ -3,7 +3,54 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePlayer } from '@/context/PlayerContext';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Gauge, Download, Shuffle, Repeat, Repeat1, ThumbsUp, ThumbsDown, Mic2 } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Gauge, Download, Shuffle, Repeat, Repeat1, ThumbsUp, ThumbsDown, Mic2, Edit2, Camera, Save, X, FileMusic } from 'lucide-react';
+import toast from 'react-hot-toast';
+
+async function uploadToCloudinaryDirect(
+  file: File,
+  folder: string,
+  resourceType: 'image' | 'video' = 'image',
+  onProgress?: (pct: number) => void
+): Promise<string> {
+  const sigRes = await fetch(`/api/songs/upload-signature?folder=${folder}`);
+  if (!sigRes.ok) throw new Error('Không lấy được chữ ký upload');
+  const { signature, timestamp, cloudName, apiKey } = await sigRes.json();
+
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('api_key', apiKey);
+  fd.append('timestamp', String(timestamp));
+  fd.append('signature', signature);
+  fd.append('folder', folder);
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`);
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+    }
+    xhr.onload = () => {
+      try {
+        const res = JSON.parse(xhr.responseText);
+        if (xhr.status === 200) {
+          let url: string = res.secure_url;
+          if (resourceType === 'video' && !url.endsWith('.mp3')) {
+            url = url.replace('/upload/', '/upload/f_mp3/').replace(/\.[^/.]+$/, '.mp3');
+          }
+          resolve(url);
+        } else {
+          reject(new Error(`Cloudinary: ${res.error?.message || xhr.responseText}`));
+        }
+      } catch {
+        reject(new Error(`Cloudinary lỗi (${xhr.status}): ${xhr.responseText.slice(0, 120)}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Lỗi kết nối Cloudinary'));
+    xhr.send(fd);
+  });
+}
 
 export default function Player() {
   const { 
@@ -21,6 +68,20 @@ export default function Player() {
   const [dislikes, setDislikes] = useState(0);
   const [userInteraction, setUserInteraction] = useState<'LIKE' | 'DISLIKE' | null>(null);
   const viewedSongId = useRef<number | null>(null);
+
+  // Admin and Edit states
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [savingLyrics, setSavingLyrics] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editArtist, setEditArtist] = useState('');
+  const [editLyrics, setEditLyrics] = useState('');
+  const [editImage, setEditImage] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const [editSound, setEditSound] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [stage, setStage] = useState('');
+  const [savingSong, setSavingSong] = useState(false);
 
   // Lyrics states
   const [showLyricsModal, setShowLyricsModal] = useState(false);
@@ -49,6 +110,128 @@ export default function Player() {
       }
     }
   }, [showLyricsModal, currentSong?.id]);
+
+  // Check if admin on mount/load
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.role && data.role.trim().toUpperCase() === 'ADMIN') {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
+      })
+      .catch(() => setIsAdmin(false));
+  }, []);
+
+  const handleSaveLyrics = async () => {
+    if (!currentSong) return;
+    setSavingLyrics(true);
+    try {
+      const formData = new FormData();
+      formData.append('id', String(currentSong.id));
+      formData.append('title', currentSong.title);
+      formData.append('artist', currentSong.artist);
+      formData.append('lyrics', lyrics);
+
+      const res = await fetch('/api/admin/songs', {
+        method: 'PATCH',
+        body: formData,
+      });
+
+      if (res.ok) {
+        toast.success('Đã lưu lời bài hát thành công!');
+        currentSong.lyrics = lyrics;
+      } else {
+        toast.error('Lưu lời bài hát thất bại');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Lỗi kết nối khi lưu');
+    } finally {
+      setSavingLyrics(false);
+    }
+  };
+
+  const handleOpenEditModal = () => {
+    if (!currentSong) return;
+    setEditTitle(currentSong.title || '');
+    setEditArtist(currentSong.artist || '');
+    setEditLyrics(currentSong.lyrics || '');
+    setEditImagePreview(currentSong.image_url || '/bsound.png');
+    setEditImage(null);
+    setEditSound(null);
+    setUploadProgress(0);
+    setStage('');
+    setSavingSong(false);
+    setShowEditModal(true);
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditImage(null);
+    setEditImagePreview(null);
+    setEditSound(null);
+    setUploadProgress(0);
+    setStage('');
+    setSavingSong(false);
+  };
+
+  const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) { setEditImage(file); setEditImagePreview(URL.createObjectURL(file)); }
+  };
+
+  const handleEditSongSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentSong) return;
+    setSavingSong(true);
+    setUploadProgress(0);
+    setStage('');
+
+    try {
+      const formData = new FormData();
+      formData.append('id', String(currentSong.id));
+      formData.append('title', editTitle);
+      formData.append('artist', editArtist);
+      formData.append('lyrics', editLyrics);
+
+      if (editSound) {
+        setStage('nhạc');
+        const fileUrl = await uploadToCloudinaryDirect(editSound, 'bsound', 'video', setUploadProgress);
+        formData.append('fileUrl', fileUrl);
+      }
+
+      if (editImage) {
+        formData.append('image', editImage);
+      }
+
+      setStage('lưu bài');
+      const res = await fetch('/api/admin/songs', {
+        method: 'PATCH',
+        body: formData
+      });
+
+      if (res.ok) {
+        toast.success('Đã cập nhật bài hát thành công!');
+        currentSong.title = editTitle;
+        currentSong.artist = editArtist;
+        currentSong.lyrics = editLyrics;
+        if (editImagePreview) currentSong.image_url = editImagePreview;
+        closeEditModal();
+        router.refresh();
+      } else {
+        toast.error('Cập nhật bài hát thất bại');
+      }
+    } catch (error: any) {
+      toast.error(`Lỗi: ${error.message || 'Cập nhật thất bại'}`);
+    } finally {
+      setSavingSong(false);
+      setStage('');
+      setUploadProgress(0);
+    }
+  };
 
   const handleCopyLyrics = () => {
     if (!lyrics) return;
@@ -190,6 +373,12 @@ export default function Player() {
               {dislikes}
             </button>
           </div>
+          {/* Edit Icon for Admin */}
+          {isAdmin && (
+            <button onClick={handleOpenEditModal} title="Chỉnh sửa bài hát" style={{ marginRight: '8px', opacity: 0.8, color: 'inherit', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--primary)'} onMouseLeave={(e) => e.currentTarget.style.color = 'inherit'}>
+              <Edit2 size={22} />
+            </button>
+          )}
           {/* Lyrics Icon before Volume */}
           <button onClick={() => setShowLyricsModal(true)} title="Xem lời bài hát" style={{ opacity: 0.8, color: 'inherit', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }}>
             <Mic2 size={22} />
@@ -268,6 +457,12 @@ export default function Player() {
 
       {/* ── Row 3: Mobile only — Volume + Shuffle + Repeat + Download ── */}
       <div className="player-row3-mobile">
+        {/* Edit Icon for Admin on Mobile */}
+        {isAdmin && (
+          <button onClick={handleOpenEditModal} title="Chỉnh sửa bài hát" style={{ marginRight: '6px', opacity: 0.8, padding: '4px', color: 'inherit', display: 'flex', alignItems: 'center' }}>
+            <Edit2 size={22} />
+          </button>
+        )}
         {/* Lyrics Icon on Mobile before Volume */}
         <button onClick={() => setShowLyricsModal(true)} title="Xem lời bài hát" style={{ opacity: 0.8, padding: '4px', color: 'inherit', display: 'flex', alignItems: 'center' }}>
           <Mic2 size={22} />
@@ -314,19 +509,62 @@ export default function Player() {
               </button>
             </div>
             
-            <div style={{ maxHeight: '350px', overflowY: 'auto', paddingRight: '6px', whiteSpace: 'pre-wrap', lineHeight: 1.8, fontSize: '0.95rem', color: '#e5e5e5' }}>
+            <div style={{ maxHeight: '350px', overflowY: 'auto', paddingRight: '6px', display: 'flex', flexDirection: 'column', width: '100%' }}>
               {loadingLyrics ? (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '30px' }}>
                   <div className="loader" style={{ width: '30px', height: '30px' }} />
                 </div>
+              ) : isAdmin ? (
+                <textarea
+                  value={lyrics}
+                  onChange={(e) => setLyricsText(e.target.value)}
+                  placeholder="Lời bài hát..."
+                  style={{
+                    width: '100%',
+                    height: '280px',
+                    background: 'rgba(0,0,0,0.3)',
+                    border: '1px solid var(--glass-border)',
+                    borderRadius: '8px',
+                    color: 'white',
+                    padding: '12px',
+                    fontFamily: 'inherit',
+                    fontSize: '0.95rem',
+                    lineHeight: 1.6,
+                    resize: 'none',
+                    outline: 'none'
+                  }}
+                />
               ) : lyrics ? (
-                lyrics
+                <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, fontSize: '0.95rem', color: '#e5e5e5' }}>
+                  {lyrics}
+                </div>
               ) : (
                 <p style={{ color: 'var(--text-muted)', textAlign: 'center', fontStyle: 'italic' }}>Chưa có lời bài hát.</p>
               )}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--glass-border)', paddingTop: '12px', gap: '8px' }}>
+              {isAdmin && (
+                <button
+                  onClick={handleSaveLyrics}
+                  disabled={savingLyrics}
+                  style={{
+                    background: 'var(--primary)',
+                    color: 'black',
+                    fontWeight: 800,
+                    padding: '8px 16px',
+                    borderRadius: '10px',
+                    fontSize: '0.85rem',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {savingLyrics ? 'Đang lưu...' : 'Lưu Lời bài hát'}
+                </button>
+              )}
               <button 
                 onClick={handleCopyLyrics} 
                 disabled={!lyrics}
@@ -348,6 +586,70 @@ export default function Player() {
                 {copied ? 'Đã sao chép!' : 'Copy Lời bài hát'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Song Modal for Admin ── */}
+      {showEditModal && (
+        <div className="modal-overlay" onClick={closeEditModal} style={{ zIndex: 10000 }}>
+          <div className="modal-content glass" onClick={e => e.stopPropagation()} style={{ maxWidth: '580px' }}>
+            <div className="modal-header">
+              <h2>Chỉnh sửa thông tin bài hát</h2>
+              <button onClick={closeEditModal} style={{ fontSize: '1.5rem', color: 'var(--text-muted)', cursor: 'pointer' }}><X /></button>
+            </div>
+            <form onSubmit={handleEditSongSubmit} className="edit-form-grid">
+              <div className="edit-left">
+                <label className="artwork-preview">
+                  <img src={editImagePreview || '/bsound.png'} alt="Preview" />
+                  <div className="overlay-camera"><Camera size={24} /></div>
+                  <input type="file" hidden accept="image/*" onChange={handleEditImageChange} />
+                </label>
+                <div className="form-group">
+                  <label>Tên bài hát</label>
+                  <input type="text" value={editTitle}
+                    onChange={e => setEditTitle(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label>Nghệ sĩ</label>
+                  <input type="text" value={editArtist}
+                    onChange={e => setEditArtist(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label>File nhạc (đổi sound)</label>
+                  <label className={`file-picker ${editSound ? 'has-file' : ''}`} style={{ width: '100%' }}>
+                    <FileMusic size={18} />
+                    <span style={{ fontSize: '0.75rem' }}>{editSound ? editSound.name : 'MP3 / WAV / MP4...'}</span>
+                    <input
+                      type="file"
+                      accept="audio/*,video/*"
+                      onChange={(e) => setEditSound(e.target.files?.[0] || null)}
+                      hidden
+                    />
+                  </label>
+                </div>
+                <button type="submit" className="btn-save" disabled={savingSong} style={{ marginTop: '8px' }}>
+                  {savingSong ? (
+                    <>
+                      <span className="spin" />
+                      Đang tải {stage} {uploadProgress > 0 ? `${uploadProgress}%` : '...'}
+                    </>
+                  ) : (
+                    <>
+                      <Save size={16} /> Lưu
+                    </>
+                  )}
+                </button>
+              </div>
+              <div className="edit-right">
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Lời bài hát</label>
+                  <textarea value={editLyrics}
+                    onChange={e => setEditLyrics(e.target.value)}
+                    style={{ height: '240px', resize: 'none' }} />
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       )}

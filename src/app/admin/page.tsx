@@ -2,9 +2,55 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Music, Users, Megaphone, Check, X, Trash2, Edit2, Save, Camera } from 'lucide-react';
+import { Music, Users, Megaphone, Check, X, Trash2, Edit2, Save, Camera, FileMusic } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { usePlayer } from '@/context/PlayerContext';
+
+async function uploadToCloudinaryDirect(
+  file: File,
+  folder: string,
+  resourceType: 'image' | 'video' = 'image',
+  onProgress?: (pct: number) => void
+): Promise<string> {
+  const sigRes = await fetch(`/api/songs/upload-signature?folder=${folder}`);
+  if (!sigRes.ok) throw new Error('Không lấy được chữ ký upload');
+  const { signature, timestamp, cloudName, apiKey } = await sigRes.json();
+
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('api_key', apiKey);
+  fd.append('timestamp', String(timestamp));
+  fd.append('signature', signature);
+  fd.append('folder', folder);
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`);
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+    }
+    xhr.onload = () => {
+      try {
+        const res = JSON.parse(xhr.responseText);
+        if (xhr.status === 200) {
+          let url: string = res.secure_url;
+          if (resourceType === 'video' && !url.endsWith('.mp3')) {
+            url = url.replace('/upload/', '/upload/f_mp3/').replace(/\.[^/.]+$/, '.mp3');
+          }
+          resolve(url);
+        } else {
+          reject(new Error(`Cloudinary: ${res.error?.message || xhr.responseText}`));
+        }
+      } catch {
+        reject(new Error(`Cloudinary lỗi (${xhr.status}): ${xhr.responseText.slice(0, 120)}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Lỗi kết nối Cloudinary'));
+    xhr.send(fd);
+  });
+}
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'songs' | 'users' | 'ads'>('songs');
@@ -16,6 +62,10 @@ export default function AdminDashboard() {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [editImage, setEditImage] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const [editSound, setEditSound] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [stage, setStage] = useState<string>('');
+  const [loadingAction, setLoadingAction] = useState<boolean>(false);
   const router = useRouter();
   const { playSong } = usePlayer();
 
@@ -40,29 +90,52 @@ export default function AdminDashboard() {
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const endpoint = activeTab === 'songs' ? '/api/admin/songs' : '/api/admin/users';
-    
-    let options: RequestInit = { method: 'PATCH' };
-    if (activeTab === 'songs') {
-      const formData = new FormData();
-      formData.append('id', editingItem.id);
-      formData.append('title', editingItem.title);
-      formData.append('artist', editingItem.artist);
-      formData.append('lyrics', editingItem.lyrics);
-      if (editImage) formData.append('image', editImage);
-      options.body = formData;
-    } else {
-      options.headers = { 'Content-Type': 'application/json' };
-      options.body = JSON.stringify(editingItem);
-    }
+    setLoadingAction(true);
+    setUploadProgress(0);
+    setStage('');
 
-    const res = await fetch(endpoint, options);
-    if (res.ok) {
-      toast.success('Đã cập nhật thành công');
-      setEditingItem(null); setEditImage(null); setEditImagePreview(null);
-      fetchData();
-    } else {
-      toast.error('Cập nhật thất bại');
+    try {
+      const endpoint = activeTab === 'songs' ? '/api/admin/songs' : '/api/admin/users';
+      let options: RequestInit = { method: 'PATCH' };
+
+      if (activeTab === 'songs') {
+        const formData = new FormData();
+        formData.append('id', editingItem.id);
+        formData.append('title', editingItem.title);
+        formData.append('artist', editingItem.artist);
+        formData.append('lyrics', editingItem.lyrics || '');
+
+        if (editSound) {
+          setStage('nhạc');
+          const fileUrl = await uploadToCloudinaryDirect(editSound, 'bsound', 'video', setUploadProgress);
+          formData.append('fileUrl', fileUrl);
+        }
+
+        if (editImage) {
+          formData.append('image', editImage);
+        }
+
+        options.body = formData;
+      } else {
+        options.headers = { 'Content-Type': 'application/json' };
+        options.body = JSON.stringify(editingItem);
+      }
+
+      setStage('lưu bài');
+      const res = await fetch(endpoint, options);
+      if (res.ok) {
+        toast.success('Đã cập nhật thành công');
+        closeEdit();
+        fetchData();
+      } else {
+        toast.error('Cập nhật thất bại');
+      }
+    } catch (error: any) {
+      toast.error(`Lỗi: ${error.message || 'Cập nhật thất bại'}`);
+    } finally {
+      setLoadingAction(false);
+      setStage('');
+      setUploadProgress(0);
     }
   };
 
@@ -130,7 +203,15 @@ export default function AdminDashboard() {
     }
   };
 
-  const closeEdit = () => { setEditingItem(null); setEditImage(null); setEditImagePreview(null); };
+  const closeEdit = () => {
+    setEditingItem(null);
+    setEditImage(null);
+    setEditImagePreview(null);
+    setEditSound(null);
+    setUploadProgress(0);
+    setStage('');
+    setLoadingAction(false);
+  };
 
   return (
     <div className="fade-in admin-container">
@@ -288,7 +369,31 @@ export default function AdminDashboard() {
                       <input type="text" value={editingItem.artist}
                         onChange={e => setEditingItem({...editingItem, artist: e.target.value})} />
                     </div>
-                    <button type="submit" className="btn-save"><Save size={16} /> Lưu</button>
+                    <div className="form-group">
+                      <label>File nhạc (đổi sound)</label>
+                      <label className={`file-picker ${editSound ? 'has-file' : ''}`} style={{ width: '100%' }}>
+                        <FileMusic size={18} />
+                        <span style={{ fontSize: '0.75rem' }}>{editSound ? editSound.name : 'MP3 / WAV / MP4...'}</span>
+                        <input
+                          type="file"
+                          accept="audio/*,video/*"
+                          onChange={(e) => setEditSound(e.target.files?.[0] || null)}
+                          hidden
+                        />
+                      </label>
+                    </div>
+                    <button type="submit" className="btn-save" disabled={loadingAction}>
+                      {loadingAction ? (
+                        <>
+                          <span className="spin" />
+                          Đang tải {stage} {uploadProgress > 0 ? `${uploadProgress}%` : '...'}
+                        </>
+                      ) : (
+                        <>
+                          <Save size={16} /> Lưu
+                        </>
+                      )}
+                    </button>
                   </div>
                   <div className="edit-right">
                     <div className="form-group" style={{ flex: 1 }}>

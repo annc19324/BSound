@@ -41,6 +41,7 @@ export async function PATCH(request: Request) {
   const title = formData.get('title');
   const artist = formData.get('artist');
   const lyrics = formData.get('lyrics');
+  const fileUrl = formData.get('fileUrl');
   const image = formData.get('image') as File | null;
 
   if (status) {
@@ -62,11 +63,25 @@ export async function PATCH(request: Request) {
       imageUrl = uploadResponse.secure_url;
     }
 
+    const fields: string[] = ['title = $1', 'artist = $2', 'lyrics = $3'];
+    const values: any[] = [title, artist, lyrics];
+    let paramIndex = 4;
+
     if (imageUrl) {
-      await query('UPDATE songs SET title = $1, artist = $2, lyrics = $3, image_url = $4 WHERE id = $5', [title, artist, lyrics, imageUrl, id]);
-    } else {
-      await query('UPDATE songs SET title = $1, artist = $2, lyrics = $3 WHERE id = $4', [title, artist, lyrics, id]);
+      fields.push(`image_url = $${paramIndex}`);
+      values.push(imageUrl);
+      paramIndex++;
     }
+
+    if (fileUrl) {
+      fields.push(`file_url = $${paramIndex}`);
+      values.push(fileUrl);
+      paramIndex++;
+    }
+
+    values.push(id);
+    const queryStr = `UPDATE songs SET ${fields.join(', ')} WHERE id = $${paramIndex}`;
+    await query(queryStr, values);
   }
   
   return NextResponse.json({ success: true });
