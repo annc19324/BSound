@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Music, Users, Megaphone, Check, X, Trash2, Edit2, Save, Camera, FileMusic } from 'lucide-react';
+import { Music, Users, Megaphone, Check, X, Trash2, Edit2, Save, Camera, FileMusic, Key, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { usePlayer } from '@/context/PlayerContext';
 
@@ -53,7 +53,7 @@ async function uploadToCloudinaryDirect(
 }
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'songs' | 'users' | 'ads'>('songs');
+  const [activeTab, setActiveTab] = useState<'songs' | 'users' | 'ads' | 'dlpassword'>('songs');
   const [songs, setSongs] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [ads, setAds] = useState<any[]>([]);
@@ -66,6 +66,11 @@ export default function AdminDashboard() {
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [stage, setStage] = useState<string>('');
   const [loadingAction, setLoadingAction] = useState<boolean>(false);
+  // Download password state
+  const [dlPassword, setDlPassword] = useState<string>('');
+  const [dlPasswordCurrent, setDlPasswordCurrent] = useState<string | null>(null);
+  const [dlPasswordSaving, setDlPasswordSaving] = useState(false);
+  const [dlPasswordShow, setDlPasswordShow] = useState(false);
   const router = useRouter();
   const { playSong } = usePlayer();
 
@@ -83,6 +88,13 @@ export default function AdminDashboard() {
       } else if (activeTab === 'ads') {
         const res = await fetch('/api/admin/ads');
         setAds(await res.json());
+      } else if (activeTab === 'dlpassword') {
+        const res = await fetch('/api/admin/download-password');
+        if (res.ok) {
+          const data = await res.json();
+          setDlPasswordCurrent(data.password);
+          setDlPassword(data.password ?? '');
+        }
       }
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -213,6 +225,47 @@ export default function AdminDashboard() {
     setLoadingAction(false);
   };
 
+  const handleSaveDlPassword = async () => {
+    if (!dlPassword.trim()) return;
+    setDlPasswordSaving(true);
+    try {
+      const res = await fetch('/api/admin/download-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: dlPassword.trim() }),
+      });
+      if (res.ok) {
+        toast.success('Đã lưu mã BSound thành công');
+        setDlPasswordCurrent(dlPassword.trim());
+      } else {
+        const err = await res.json();
+        toast.error(err.error || 'Lưu thất bại');
+      }
+    } catch {
+      toast.error('Có lỗi xảy ra');
+    } finally {
+      setDlPasswordSaving(false);
+    }
+  };
+
+  const handleDeleteDlPassword = async () => {
+    setDlPasswordSaving(true);
+    try {
+      const res = await fetch('/api/admin/download-password', { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Đã xoá mã BSound');
+        setDlPasswordCurrent(null);
+        setDlPassword('');
+      } else {
+        toast.error('Xoá thất bại');
+      }
+    } catch {
+      toast.error('Có lỗi xảy ra');
+    } finally {
+      setDlPasswordSaving(false);
+    }
+  };
+
   return (
     <div className="fade-in admin-container">
       <header className="admin-header">
@@ -229,6 +282,9 @@ export default function AdminDashboard() {
           <button className={activeTab === 'ads' ? 'active' : ''} onClick={() => setActiveTab('ads')}>
             <Megaphone size={16} /><span>Quảng cáo</span>
             {ads.length > 0 && <span className="tab-count">{ads.length}</span>}
+          </button>
+          <button className={activeTab === 'dlpassword' ? 'active' : ''} onClick={() => setActiveTab('dlpassword')}>
+            <Key size={16} /><span>Mật khẩu tải</span>
           </button>
         </div>
       </header>
@@ -335,6 +391,84 @@ export default function AdminDashboard() {
                         className="btn-delete"><Trash2 size={16} /></button>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Download Password Tab ── */}
+            {activeTab === 'dlpassword' && (
+              <div style={{ maxWidth: 480 }}>
+                <div className="ad-form glass" style={{ gap: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                    <Key size={20} color="var(--primary)" />
+                    <h3 style={{ margin: 0 }}>Mật khẩu tải nhạc (Mã BSound)</h3>
+                  </div>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
+                    Người dùng cần nhập mã này để tải toàn bộ bài hát. Liên hệ quản trị viên để cấp mã.
+                  </p>
+
+                  {dlPasswordCurrent && (
+                    <div style={{
+                      padding: '12px 14px',
+                      background: 'rgba(243,186,47,0.08)',
+                      border: '1px solid rgba(243,186,47,0.2)',
+                      borderRadius: 10,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      fontSize: '0.85rem',
+                    }}>
+                      <Key size={14} color="var(--primary)" />
+                      <span style={{ color: 'var(--text-muted)' }}>Mã hiện tại:</span>
+                      <span style={{ fontWeight: 800, color: 'var(--primary)', fontFamily: 'monospace', letterSpacing: 2 }}>
+                        {dlPasswordShow ? dlPasswordCurrent : '••••••••'}
+                      </span>
+                      <button
+                        onClick={() => setDlPasswordShow(v => !v)}
+                        style={{ marginLeft: 'auto', padding: 4, color: 'var(--text-muted)' }}
+                        title={dlPasswordShow ? 'Ẩn' : 'Hiện'}
+                      >
+                        {dlPasswordShow ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="form-group">
+                    <label>Đặt mã mới</label>
+                    <input
+                      type="text"
+                      placeholder="Nhập mã BSound mới..."
+                      value={dlPassword}
+                      onChange={e => setDlPassword(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && !dlPasswordSaving && handleSaveDlPassword()}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button
+                      className="btn-save"
+                      style={{ flex: 1 }}
+                      disabled={dlPasswordSaving || !dlPassword.trim()}
+                      onClick={handleSaveDlPassword}
+                    >
+                      {dlPasswordSaving ? <><span className="spin" /> Đang lưu...</> : <><Save size={15} /> Lưu mã</>}
+                    </button>
+                    {dlPasswordCurrent && (
+                      <button
+                        onClick={handleDeleteDlPassword}
+                        disabled={dlPasswordSaving}
+                        style={{
+                          padding: '10px 16px', borderRadius: 10,
+                          background: 'rgba(255,68,68,0.1)', color: '#ff4444',
+                          border: '1px solid rgba(255,68,68,0.2)',
+                          fontWeight: 700, fontSize: '0.82rem',
+                          display: 'flex', alignItems: 'center', gap: 6,
+                        }}
+                      >
+                        <Trash2 size={15} /> Xoá mã
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
