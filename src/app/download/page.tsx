@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Download, CheckSquare, Square, Music, Loader2, Lock, Key, Info } from 'lucide-react';
+import { Download, CheckSquare, Square, Music, Loader2, Key, Info, FolderOpen, FolderCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Song {
@@ -12,6 +12,13 @@ interface Song {
   image_url?: string;
 }
 
+// Extend Window type for File System Access API
+declare global {
+  interface Window {
+    showDirectoryPicker?: (opts?: { mode?: string }) => Promise<FileSystemDirectoryHandle>;
+  }
+}
+
 export default function DownloadPage() {
   const [songs, setSongs] = useState<Song[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -19,9 +26,13 @@ export default function DownloadPage() {
   const [password, setPassword] = useState('');
   const [downloading, setDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<{ current: number; total: number } | null>(null);
+  const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle | null>(null);
+  const [fsApiSupported, setFsApiSupported] = useState(false);
   const abortRef = useRef(false);
 
   useEffect(() => {
+    setFsApiSupported(typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function');
+
     fetch('/api/download')
       .then(r => r.json())
       .then(data => {
@@ -34,16 +45,7 @@ export default function DownloadPage() {
       .finally(() => setLoadingSongs(false));
   }, []);
 
-  const allSelected = songs.length > 0 && selected.size === songs.length;
   const noneSelected = selected.size === 0;
-
-  const toggleAll = () => {
-    if (allSelected) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(songs.map(s => s.id)));
-    }
-  };
 
   const toggleSong = (id: number) => {
     setSelected(prev => {
@@ -59,6 +61,36 @@ export default function DownloadPage() {
     return raw.replace(/[<>:"/\\|?*]+/g, '_').replace(/\s+/g, ' ').trim() + '.mp3';
   };
 
+  const handlePickFolder = async () => {
+    try {
+      const handle = await window.showDirectoryPicker!({ mode: 'readwrite' });
+      setDirHandle(handle);
+      toast.success(`Đã chọn thư mục: ${handle.name}`);
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') toast.error('Không thể chọn thư mục');
+    }
+  };
+
+  /** Save a blob directly to the picked directory */
+  const saveToDir = async (handle: FileSystemDirectoryHandle, filename: string, blob: Blob) => {
+    const fileHandle = await handle.getFileHandle(filename, { create: true });
+    const writable = await (fileHandle as any).createWritable();
+    await writable.write(blob);
+    await writable.close();
+  };
+
+  /** Legacy fallback: trigger browser download */
+  const triggerDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handleDownload = async () => {
     if (!password.trim()) {
       toast.error('Vui lòng nhập mã BSound trước khi tải');
@@ -67,6 +99,22 @@ export default function DownloadPage() {
     if (noneSelected) {
       toast.error('Vui lòng chọn ít nhất một bài hát');
       return;
+    }
+
+    // If FS API supported but no folder chosen, auto-open picker
+    let activeDir = dirHandle;
+    if (fsApiSupported && !activeDir) {
+      try {
+        activeDir = await window.showDirectoryPicker!({ mode: 'readwrite' });
+        setDirHandle(activeDir);
+        toast.success(`Đã chọn thư mục: ${activeDir.name}`);
+      } catch (e: any) {
+        if (e?.name === 'AbortError') {
+          toast.error('Bạn chưa chọn thư mục lưu');
+          return;
+        }
+        activeDir = null; // Fallback to legacy download
+      }
     }
 
     setDownloading(true);
@@ -101,23 +149,25 @@ export default function DownloadPage() {
         try {
           const fileRes = await fetch(s.file_url);
           const blob = await fileRes.blob();
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = sanitizeFilename(s.title, s.artist);
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-          // Small delay to avoid browser blocking multiple downloads
-          await new Promise(r => setTimeout(r, 600));
+          const filename = sanitizeFilename(s.title, s.artist);
+
+          if (activeDir) {
+            await saveToDir(activeDir, filename, blob);
+          } else {
+            triggerDownload(blob, filename);
+            await new Promise(r => setTimeout(r, 600)); // Avoid browser blocking
+          }
         } catch {
           toast.error(`Không tải được: ${s.title}`);
         }
       }
 
       if (!abortRef.current) {
-        toast.success(`Đã tải xong ${total} bài hát!`);
+        toast.success(
+          activeDir
+            ? `Đã lưu ${total} bài vào "${activeDir.name}"!`
+            : `Đã tải xong ${total} bài hát!`
+        );
       }
     } catch (err: any) {
       toast.error(err.message || 'Có lỗi xảy ra');
@@ -146,40 +196,78 @@ export default function DownloadPage() {
         <span>Tính năng này yêu cầu <strong>Mã BSound</strong>. Liên hệ quản trị viên để lấy mã tải nhạc.</span>
       </div>
 
-      {/* Download button + password */}
+      {/* Action card: folder + password + button */}
       <div className="dl-action-card glass">
-        <div className="dl-password-group">
-          <Key size={18} className="dl-key-icon" />
-          <input
-            type="password"
-            placeholder="Nhập mã BSound..."
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleDownload()}
-            className="dl-password-input"
-            autoComplete="off"
-          />
+
+        {/* Folder picker row (only if FS API supported) */}
+        {fsApiSupported && (
+          <div className="dl-folder-row">
+            <button
+              className={`dl-folder-btn ${dirHandle ? 'selected' : ''}`}
+              onClick={handlePickFolder}
+              disabled={downloading}
+              title="Chọn thư mục lưu nhạc"
+            >
+              {dirHandle ? <FolderCheck size={16} /> : <FolderOpen size={16} />}
+              <span className="dl-folder-name">
+                {dirHandle ? dirHandle.name : 'Chọn thư mục lưu'}
+              </span>
+            </button>
+            {dirHandle && (
+              <button
+                className="dl-folder-clear"
+                onClick={() => setDirHandle(null)}
+                title="Bỏ chọn thư mục"
+                disabled={downloading}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Password + download button row */}
+        <div className="dl-action-row">
+          <div className="dl-password-group">
+            <Key size={18} className="dl-key-icon" />
+            <input
+              type="password"
+              placeholder="Nhập mã BSound..."
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleDownload()}
+              className="dl-password-input"
+              autoComplete="off"
+            />
+          </div>
+
+          <button
+            className="dl-btn"
+            onClick={handleDownload}
+            disabled={downloading || noneSelected || loadingSongs}
+          >
+            {downloading ? (
+              <>
+                <Loader2 size={18} className="spin-anim" />
+                {downloadProgress
+                  ? `${downloadProgress.current}/${downloadProgress.total}...`
+                  : 'Xử lý...'}
+              </>
+            ) : (
+              <>
+                <Download size={18} />
+                Tải {selected.size > 0 ? `${selected.size} bài` : 'nhạc'}
+              </>
+            )}
+          </button>
         </div>
 
-        <button
-          className="dl-btn"
-          onClick={handleDownload}
-          disabled={downloading || noneSelected || loadingSongs}
-        >
-          {downloading ? (
-            <>
-              <Loader2 size={18} className="spin-anim" />
-              {downloadProgress
-                ? `Đang tải ${downloadProgress.current}/${downloadProgress.total}...`
-                : 'Đang xử lý...'}
-            </>
-          ) : (
-            <>
-              <Download size={18} />
-              Tải {selected.size > 0 ? `${selected.size} bài` : 'nhạc'}
-            </>
-          )}
-        </button>
+        {/* Hint for unsupported browsers */}
+        {!fsApiSupported && (
+          <p className="dl-folder-hint">
+            💡 Trình duyệt của bạn không hỗ trợ chọn thư mục. File sẽ tải vào thư mục Downloads mặc định.
+          </p>
+        )}
       </div>
 
       {/* Song list controls */}
