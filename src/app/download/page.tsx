@@ -148,6 +148,7 @@ export default function DownloadPage() {
 
         try {
           const fileRes = await fetch(s.file_url);
+          if (!fileRes.ok) throw new Error('Lỗi mạng');
           const blob = await fileRes.blob();
           const filename = sanitizeFilename(s.title, s.artist);
 
@@ -157,6 +158,13 @@ export default function DownloadPage() {
             triggerDownload(blob, filename);
             await new Promise(r => setTimeout(r, 600)); // Avoid browser blocking
           }
+
+          setSongs(prev => prev.filter(song => song.id !== s.id));
+          setSelected(prev => {
+            const next = new Set(prev);
+            next.delete(s.id);
+            return next;
+          });
         } catch {
           toast.error(`Không tải được: ${s.title}`);
         }
@@ -231,7 +239,7 @@ export default function DownloadPage() {
           <div className="dl-password-group">
             <Key size={18} className="dl-key-icon" />
             <input
-              type="password"
+              type="text"
               placeholder="Nhập mã BSound..."
               value={password}
               onChange={e => setPassword(e.target.value)}
