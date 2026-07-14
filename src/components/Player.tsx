@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePlayer } from '@/context/PlayerContext';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Gauge, Download, Shuffle, Repeat, Repeat1, ThumbsUp, ThumbsDown, Mic2, Edit2, Camera, Save, X, FileMusic } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Gauge, Download, Shuffle, Repeat, Repeat1, ThumbsUp, ThumbsDown, Mic2, Edit2, Camera, Save, X, FileMusic, Disc, ListMusic } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 async function uploadToCloudinaryDirect(
@@ -57,12 +57,15 @@ export default function Player() {
     currentSong, isPlaying, togglePlay, progress, duration, seek, 
     playbackSpeed, setPlaybackSpeed, volume, setVolume,
     setSleepTimer, remainingTime,
-    isShuffle, toggleShuffle, repeatMode, toggleRepeat, nextSong, prevSong
+    isShuffle, toggleShuffle, repeatMode, toggleRepeat, nextSong, prevSong,
+    queue, currentIndex, playSong
   } = usePlayer();
   const router = useRouter();
 
   const [showTimerMenu, setShowTimerMenu] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [showVinyl, setShowVinyl] = useState(false);
+  const [showQueue, setShowQueue] = useState(false);
   const [customMinutes, setCustomMinutes] = useState('');
   const [likes, setLikes] = useState(0);
   const [dislikes, setDislikes] = useState(0);
@@ -379,6 +382,14 @@ export default function Player() {
               <Edit2 size={22} />
             </button>
           )}
+          {/* Queue Icon */}
+          <button onClick={() => setShowQueue(!showQueue)} title="Danh sách phát" style={{ opacity: showQueue ? 1 : 0.8, color: showQueue ? 'var(--primary)' : 'inherit', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }}>
+            <ListMusic size={22} />
+          </button>
+          {/* Vinyl Icon */}
+          <button onClick={() => setShowVinyl(!showVinyl)} title="Đĩa nhạc" style={{ opacity: showVinyl ? 1 : 0.8, color: showVinyl ? 'var(--primary)' : 'inherit', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }}>
+            <Disc size={22} />
+          </button>
           {/* Lyrics Icon before Volume */}
           <button onClick={() => setShowLyricsModal(true)} title="Xem lời bài hát" style={{ opacity: 0.8, color: 'inherit', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }}>
             <Mic2 size={22} />
@@ -463,6 +474,12 @@ export default function Player() {
             <Edit2 size={22} />
           </button>
         )}
+        <button onClick={() => setShowQueue(!showQueue)} title="Danh sách phát" style={{ opacity: showQueue ? 1 : 0.8, padding: '4px', color: showQueue ? 'var(--primary)' : 'inherit', display: 'flex', alignItems: 'center' }}>
+          <ListMusic size={22} />
+        </button>
+        <button onClick={() => setShowVinyl(!showVinyl)} title="Đĩa nhạc" style={{ opacity: showVinyl ? 1 : 0.8, padding: '4px', color: showVinyl ? 'var(--primary)' : 'inherit', display: 'flex', alignItems: 'center' }}>
+          <Disc size={22} />
+        </button>
         {/* Lyrics Icon on Mobile before Volume */}
         <button onClick={() => setShowLyricsModal(true)} title="Xem lời bài hát" style={{ opacity: 0.8, padding: '4px', color: 'inherit', display: 'flex', alignItems: 'center' }}>
           <Mic2 size={22} />
@@ -650,6 +667,51 @@ export default function Player() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Vinyl Overlay ── */}
+      {showVinyl && (
+        <div className={`vinyl-overlay ${isPlaying ? 'vinyl-spin' : ''}`}>
+          <img src={currentSong.image_url || '/bsound.png'} alt="Vinyl" />
+        </div>
+      )}
+
+      {/* ── Queue Popup ── */}
+      {showQueue && (
+        <div className="queue-popup">
+          <div className="queue-header">
+            <h3>Danh sách phát</h3>
+            <button onClick={() => setShowQueue(false)} className="queue-close">
+              <X size={20} />
+            </button>
+          </div>
+          <div className="queue-list">
+            {queue.length > 0 ? queue.map((song, idx) => (
+              <div 
+                key={`${song.id}-${idx}`}
+                className={`queue-item ${currentIndex === idx ? 'active' : ''}`}
+                onClick={() => {
+                  if (currentIndex !== idx) {
+                    playSong(song, queue);
+                  }
+                }}
+              >
+                <img src={song.image_url || '/bsound.png'} className="queue-item-thumb" alt={song.title} />
+                <div className="queue-item-info">
+                  <div className="queue-item-title">{song.title}</div>
+                  <div className="queue-item-artist">{song.artist}</div>
+                </div>
+                {currentIndex === idx && isPlaying && (
+                  <div className="loader" style={{ width: '16px', height: '16px', borderWidth: '2px', borderLeftColor: 'var(--primary)', flexShrink: 0 }} />
+                )}
+              </div>
+            )) : (
+              <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                Danh sách trống
+              </div>
+            )}
           </div>
         </div>
       )}
