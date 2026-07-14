@@ -2,11 +2,13 @@
 
 import React from 'react';
 import { RefreshCw } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function RefreshButton() {
+  const router = useRouter();
   return (
     <button 
-      onClick={() => window.location.reload()} 
+      onClick={() => router.refresh()} 
       style={{ 
         padding: '6px', 
         display: 'flex', 

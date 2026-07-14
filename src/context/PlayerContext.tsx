@@ -147,7 +147,12 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
       setCurrentIndex(newQueue.findIndex(s => s.id === song.id));
     } else {
       const idx = queue.findIndex(s => s.id === song.id);
-      if (idx !== -1) setCurrentIndex(idx);
+      if (idx !== -1) {
+        setCurrentIndex(idx);
+      } else {
+        setQueue([song]);
+        setCurrentIndex(0);
+      }
     }
     
     if (audioRef.current) {

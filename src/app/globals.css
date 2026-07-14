@@ -299,6 +299,7 @@ button {
   z-index: 1100;
   display: flex;
   align-items: stretch;
+  position: relative;
 }
 
 /* Desktop: single-row inner grid */

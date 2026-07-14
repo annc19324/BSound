@@ -2,8 +2,10 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { RefreshCw } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function PullToRefresh() {
+  const router = useRouter();
   const [pullDistance, setPullDistance] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const startY = useRef(0);
@@ -51,10 +53,14 @@ export default function PullToRefresh() {
       if (pullDistance >= threshold) {
         setRefreshing(true);
         setPullDistance(60);
-        // Reload the page
+        // Soft refresh to preserve player state
         setTimeout(() => {
-          window.location.reload();
-        }, 800);
+          router.refresh();
+          setTimeout(() => {
+            setRefreshing(false);
+            setPullDistance(0);
+          }, 500); // Hide spinner shortly after refresh
+        }, 300);
       } else {
         setPullDistance(0);
       }
