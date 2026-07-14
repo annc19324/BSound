@@ -66,6 +66,7 @@ export default function Player() {
   const [showQueue, setShowQueue] = useState(false);
   const [showVinyl, setShowVinyl] = useState(false);
   const [vinylScale, setVinylScale] = useState(1);
+  const [customMinutes, setCustomMinutes] = useState('');
   const [showSleepTimer, setShowSleepTimer] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [likes, setLikes] = useState(0);
