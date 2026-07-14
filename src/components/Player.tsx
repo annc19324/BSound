@@ -63,10 +63,11 @@ export default function Player() {
   const router = useRouter();
 
   const [showTimerMenu, setShowTimerMenu] = useState(false);
-  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
-  const [showVinyl, setShowVinyl] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
-  const [customMinutes, setCustomMinutes] = useState('');
+  const [showVinyl, setShowVinyl] = useState(false);
+  const [vinylScale, setVinylScale] = useState(1);
+  const [showSleepTimer, setShowSleepTimer] = useState(false);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [likes, setLikes] = useState(0);
   const [dislikes, setDislikes] = useState(0);
   const [userInteraction, setUserInteraction] = useState<'LIKE' | 'DISLIKE' | null>(null);
@@ -692,9 +693,27 @@ export default function Player() {
 
       {/* ── Vinyl Overlay ── */}
       {showVinyl && (
-        <div className={`vinyl-overlay ${isPlaying ? 'vinyl-spin' : ''}`}>
-          <img src={currentSong.image_url || '/bsound.png'} alt="Vinyl" />
-        </div>
+        <>
+          <div className={`vinyl-overlay ${isPlaying ? 'vinyl-spin' : ''}`} style={{ '--vinyl-scale': vinylScale } as React.CSSProperties}>
+            <img src={currentSong.image_url || '/bsound.png'} alt="Vinyl" />
+          </div>
+          <div className="vinyl-controls glass fade-in" style={{ 
+            position: 'fixed', 
+            top: '20px', 
+            left: '50%', 
+            transform: 'translateX(-50%)', 
+            zIndex: 1100, 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '12px', 
+            padding: '8px 16px', 
+            borderRadius: '30px',
+            border: '1px solid rgba(243, 186, 47, 0.3)'
+          }}>
+             <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--primary)' }}>Kích thước</span>
+             <input type="range" min="0.5" max="2" step="0.1" value={vinylScale} onChange={(e) => setVinylScale(parseFloat(e.target.value))} style={{ accentColor: 'var(--primary)', width: '100px' }} />
+          </div>
+        </>
       )}
 
       {/* ── Queue Popup ── */}

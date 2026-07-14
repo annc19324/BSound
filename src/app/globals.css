@@ -1859,14 +1859,16 @@ p { color: var(--text-muted); }
 
 /* ===== Vinyl Effect ===== */
 .vinyl-overlay {
+  --vinyl-scale: 1;
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(var(--vinyl-scale));
   width: 300px;
   height: 300px;
   border-radius: 50%;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8), 0 0 0 10px rgba(243, 186, 47, 0.1);
+  border: 4px solid var(--primary);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(243, 186, 47, 0.6);
   z-index: 1050; /* Below mobile toggle but above most things */
   display: flex;
   align-items: center;
@@ -1874,26 +1876,11 @@ p { color: var(--text-muted); }
   background: #111; /* fallback */
   pointer-events: none; /* Let clicks pass through */
 }
-.vinyl-overlay::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 40px;
-  height: 40px;
-  background: var(--bg-main);
-  border: 4px solid #222;
-  border-radius: 50%;
-  z-index: 2;
-}
 .vinyl-overlay img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   border-radius: 50%;
-  mask-image: radial-gradient(circle at center, transparent 18px, black 20px);
-  -webkit-mask-image: radial-gradient(circle at center, transparent 18px, black 20px);
 }
 
 .vinyl-spin {
@@ -1901,8 +1888,8 @@ p { color: var(--text-muted); }
 }
 
 @keyframes vinylSpin {
-  from { transform: translate(-50%, -50%) rotate(0deg); }
-  to { transform: translate(-50%, -50%) rotate(360deg); }
+  from { transform: translate(-50%, -50%) scale(var(--vinyl-scale)) rotate(0deg); }
+  to { transform: translate(-50%, -50%) scale(var(--vinyl-scale)) rotate(360deg); }
 }
 
 @media (max-width: 768px) {
