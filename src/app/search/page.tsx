@@ -58,7 +58,7 @@ export default function SearchPage() {
         gap: '24px' 
       }}>
         {results.map((song) => (
-          <div key={song.id} className="song-card" onClick={() => playSong(song)}>
+          <div key={song.id} id={`song-card-${song.id}`} className="song-card" onClick={() => playSong(song)}>
              <div style={{ 
                 width: '100%', 
                 aspectRatio: '1', 

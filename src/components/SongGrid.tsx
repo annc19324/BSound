@@ -84,6 +84,7 @@ export default function SongGrid({ songs, playlists }: Props) {
         return (
           <div 
             key={song.id} 
+            id={`song-card-${song.id}`}
             className={`song-card ${isActive ? 'song-card-active' : ''}`} 
             style={{ position: 'relative', cursor: 'pointer' }}
             onClick={() => playSong(song, songs)}

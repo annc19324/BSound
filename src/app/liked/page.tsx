@@ -40,6 +40,7 @@ export default function LikedPage() {
         {songs.map((song, i) => (
           <div 
             key={song.id} 
+            id={`song-card-${song.id}`}
             onClick={() => playSong(song)}
             className="song-row"
             style={{ 

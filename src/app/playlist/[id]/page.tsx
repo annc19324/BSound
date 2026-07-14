@@ -44,6 +44,7 @@ export default function PlaylistPage({ params }: { params: Promise<{ id: string 
         {songs.map((song, i) => (
           <div 
             key={song.id} 
+            id={`song-card-${song.id}`}
             className="song-row" 
             onClick={() => playSong(song)}
             style={{ 

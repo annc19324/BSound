@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePlayer } from '@/context/PlayerContext';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Gauge, Download, Shuffle, Repeat, Repeat1, ThumbsUp, ThumbsDown, Mic2, Edit2, Camera, Save, X, FileMusic, Disc, ListMusic } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Gauge, Download, Shuffle, Repeat, Repeat1, ThumbsUp, ThumbsDown, Mic2, Edit2, Camera, Save, X, FileMusic, Disc, ListMusic, LocateFixed } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 async function uploadToCloudinaryDirect(
@@ -127,6 +127,18 @@ export default function Player() {
       })
       .catch(() => setIsAdmin(false));
   }, []);
+
+  const handleLocateSong = () => {
+    if (!currentSong) return;
+    const el = document.getElementById(`song-card-${currentSong.id}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('locate-highlight');
+      setTimeout(() => el.classList.remove('locate-highlight'), 2000);
+    } else {
+      toast.error('Bài hát này không nằm trên màn hình hiện tại!');
+    }
+  };
 
   const handleSaveLyrics = async () => {
     if (!currentSong) return;
@@ -382,6 +394,10 @@ export default function Player() {
               <Edit2 size={22} />
             </button>
           )}
+          {/* Locate Icon */}
+          <button onClick={handleLocateSong} title="Định vị bài hát" style={{ opacity: 0.8, color: 'inherit', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--primary)'} onMouseLeave={(e) => e.currentTarget.style.color = 'inherit'}>
+            <LocateFixed size={22} />
+          </button>
           {/* Queue Icon */}
           <button onClick={() => setShowQueue(!showQueue)} title="Danh sách phát" style={{ opacity: showQueue ? 1 : 0.8, color: showQueue ? 'var(--primary)' : 'inherit', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }}>
             <ListMusic size={22} />
@@ -474,6 +490,9 @@ export default function Player() {
             <Edit2 size={22} />
           </button>
         )}
+        <button onClick={handleLocateSong} title="Định vị bài hát" style={{ opacity: 0.8, padding: '4px', color: 'inherit', display: 'flex', alignItems: 'center' }}>
+          <LocateFixed size={22} />
+        </button>
         <button onClick={() => setShowQueue(!showQueue)} title="Danh sách phát" style={{ opacity: showQueue ? 1 : 0.8, padding: '4px', color: showQueue ? 'var(--primary)' : 'inherit', display: 'flex', alignItems: 'center' }}>
           <ListMusic size={22} />
         </button>
