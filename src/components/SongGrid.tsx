@@ -5,6 +5,7 @@ import { usePlayer } from '@/context/PlayerContext';
 import { MoreVertical, Heart, Headphones, Music } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { getImageUrl } from '@/lib/image';
 
 interface Song {
   id: number;
@@ -93,10 +94,12 @@ export default function SongGrid({ songs, playlists }: Props) {
             <div
               className={`song-cover ${isActive ? 'song-cover-active' : ''}`}
             >
-              {song.image_url
-                ? <img src={song.image_url} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <span style={{ fontSize: '1.5rem' }}>🎵</span>
-              }
+              <img 
+                src={getImageUrl(song.image_url, 300)} 
+                alt={song.title} 
+                loading="lazy"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+              />
               {isActive && (
                 <div className="song-playing-badge">▶</div>
               )}

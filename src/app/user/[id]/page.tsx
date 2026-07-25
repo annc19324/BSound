@@ -6,6 +6,7 @@ import { usePlayer } from '@/context/PlayerContext';
 import { Music, ListMusic, Play, Pencil, Trash2, Save, X } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { getImageUrl } from '@/lib/image';
 
 export default function UserProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -87,7 +88,7 @@ export default function UserProfilePage() {
       {/* ── Hero ── */}
       <div className="user-hero">
         <div className="user-hero-avatar">
-          {user.image_url ? <img src={user.image_url} alt={user.name} /> : <span>{user.name?.charAt(0)?.toUpperCase()}</span>}
+          <img src={getImageUrl(user.image_url, 300)} alt={user.name} loading="lazy" />
         </div>
         <div className="user-hero-info">
           <p className="user-hero-type">{isOwner ? 'Trang của tôi' : 'Nghệ sĩ'}</p>
@@ -144,7 +145,7 @@ export default function UserProfilePage() {
                 <div className="user-song-row" onClick={() => playSong(song, songs)}>
                   <span className="user-song-num">{i + 1}</span>
                   <div className="user-song-thumb">
-                    {song.image_url ? <img src={song.image_url} alt={song.title} /> : <Music size={18} opacity={0.4} />}
+                    <img src={getImageUrl(song.image_url, 150)} alt={song.title} loading="lazy" />
                   </div>
                   <div className="user-song-meta">
                     <div className="user-song-title">{song.title}</div>

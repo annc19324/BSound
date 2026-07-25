@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { usePlayer } from '@/context/PlayerContext';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Gauge, Download, Shuffle, Repeat, Repeat1, ThumbsUp, ThumbsDown, Mic2, Edit2, Camera, Save, X, FileMusic, Disc, ListMusic, LocateFixed } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getImageUrl } from '@/lib/image';
 
 async function uploadToCloudinaryDirect(
   file: File,
@@ -340,10 +341,7 @@ export default function Player() {
         {/* Song Info */}
         <div className="player-song-info" onClick={() => router.push(`/song/${currentSong.id}`)} style={{ cursor: 'pointer' }}>
           <div className="player-thumb">
-            {currentSong.image_url
-              ? <img src={currentSong.image_url} alt={currentSong.title} />
-              : <span>🎵</span>
-            }
+            <img src={getImageUrl(currentSong.image_url, 150)} alt={currentSong.title} loading="lazy" />
           </div>
           <div className="player-meta">
             <div className="player-title">{currentSong.title}</div>
@@ -696,7 +694,7 @@ export default function Player() {
       {showVinyl && (
         <>
           <div className={`vinyl-overlay ${isPlaying ? 'vinyl-spin' : ''}`} style={{ '--vinyl-scale': vinylScale } as React.CSSProperties}>
-            <img src={currentSong.image_url || '/bsound.png'} alt="Vinyl" />
+            <img src={getImageUrl(currentSong.image_url, 400)} alt="Vinyl" loading="lazy" />
           </div>
           <div className="vinyl-controls glass fade-in" style={{ 
             position: 'fixed', 
@@ -737,7 +735,7 @@ export default function Player() {
                   }
                 }}
               >
-                <img src={song.image_url || '/bsound.png'} className="queue-item-thumb" alt={song.title} />
+                <img src={getImageUrl(song.image_url, 150)} className="queue-item-thumb" alt={song.title} loading="lazy" />
                 <div className="queue-item-info">
                   <div className="queue-item-title">{song.title}</div>
                   <div className="queue-item-artist">{song.artist}</div>

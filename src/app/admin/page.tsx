@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Music, Users, Megaphone, Check, X, Trash2, Edit2, Save, Camera, FileMusic, Key, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { usePlayer } from '@/context/PlayerContext';
+import { getImageUrl } from '@/lib/image';
 
 async function uploadToCloudinaryDirect(
   file: File,
@@ -309,9 +310,10 @@ export default function AdminDashboard() {
                 {songs.map(s => (
                   <div key={s.id} className="admin-card" onClick={() => playSong(s)} style={{ cursor: 'pointer' }}>
                     <img
-                      src={s.image_url || '/bsound.png'}
+                      src={getImageUrl(s.image_url, 150)}
                       className="admin-card-img"
                       alt={s.title}
+                      loading="lazy"
                     />
                     <div className="admin-card-body">
                       <div className="admin-card-title">{s.title}</div>
@@ -342,10 +344,7 @@ export default function AdminDashboard() {
                 {users.map(u => (
                   <div key={u.id} className="admin-card">
                     <div className="admin-avatar">
-                      {u.image_url
-                        ? <img src={u.image_url} alt={u.name} />
-                        : <span>{u.name?.charAt(0)?.toUpperCase()}</span>
-                      }
+                      <img src={getImageUrl(u.image_url, 150)} alt={u.name} loading="lazy" />
                     </div>
                     <div className="admin-card-body">
                       <div className="admin-card-title">{u.name}</div>

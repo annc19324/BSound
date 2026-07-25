@@ -5,6 +5,7 @@ import { usePlayer } from '@/context/PlayerContext';
 import { Play, ThumbsUp, ThumbsDown, MessageSquare, User, Send, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { getImageUrl } from '@/lib/image';
 
 export default function SongPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -98,7 +99,7 @@ export default function SongPage({ params }: { params: Promise<{ id: string }> }
         {/* Header */}
         <div className="song-header">
           <div className="song-artwork">
-            {song.image_url ? <img src={song.image_url} alt={song.title} /> : '🎵'}
+            <img src={getImageUrl(song.image_url, 400)} alt={song.title} loading="lazy" />
           </div>
           <div className="song-info-main">
             <p className="song-label">Bài hát</p>
