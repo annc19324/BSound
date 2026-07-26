@@ -58,8 +58,8 @@ export default function Player() {
     currentSong, isPlaying, togglePlay, progress, duration, seek, 
     playbackSpeed, setPlaybackSpeed, volume, setVolume,
     setSleepTimer, remainingTime,
-    isShuffle, toggleShuffle, repeatMode, toggleRepeat, nextSong, prevSong,
-    queue, currentIndex, playSong, addToQueue, removeFromQueue
+    playMode, togglePlayMode, nextSong, prevSong,
+    queue, currentIndex, playSong, addToQueue, removeFromQueue, nextUpQueue, removeFromNextUp
   } = usePlayer();
   const router = useRouter();
 
@@ -76,11 +76,29 @@ export default function Player() {
   const viewedSongId = useRef<number | null>(null);
 
   // Queue Search States
-  const [queueTab, setQueueTab] = useState<'queue' | 'search'>('queue');
+  const [queueTab, setQueueTab] = useState<'queue' | 'nextup' | 'search'>('queue');
   const [queueFilter, setQueueFilter] = useState('');
   const [queueSearchQuery, setQueueSearchQuery] = useState('');
   const [queueSearchResults, setQueueSearchResults] = useState<any[]>([]);
   const [isSearchingQueue, setIsSearchingQueue] = useState(false);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (queueSearchQuery.trim()) {
+        const fetchSearch = async () => {
+          setIsSearchingQueue(true);
+          try {
+            const res = await fetch(`/api/songs/search?q=${encodeURIComponent(queueSearchQuery)}`);
+            if (res.ok) setQueueSearchResults(await res.json());
+          } catch(e) {} finally { setIsSearchingQueue(false); }
+        };
+        fetchSearch();
+      } else {
+        setQueueSearchResults([]);
+      }
+    }, 400);
+    return () => clearTimeout(delayDebounceFn);
+  }, [queueSearchQuery]);
 
   useEffect(() => {
     const saved = localStorage.getItem('bsound_vinyl_scale');
@@ -218,20 +236,8 @@ export default function Player() {
     if (file) { setEditImage(file); setEditImagePreview(URL.createObjectURL(file)); }
   };
 
-  const handleQueueSearch = async (e: React.FormEvent) => {
+  const handleQueueSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!queueSearchQuery.trim()) return;
-    setIsSearchingQueue(true);
-    try {
-      const res = await fetch(`/api/songs/search?q=${encodeURIComponent(queueSearchQuery)}`);
-      if (res.ok) {
-        setQueueSearchResults(await res.json());
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsSearchingQueue(false);
-    }
   };
 
   const handleEditSongSubmit = async (e: React.FormEvent) => {
@@ -391,17 +397,15 @@ export default function Player() {
 
         {/* Playback Controls */}
         <div className="player-controls">
-          <button onClick={toggleShuffle} title="Shuffle" className="hide-mobile">
-            <Shuffle size={22} color={isShuffle ? 'var(--primary)' : 'var(--text-muted)'} />
+          <button onClick={togglePlayMode} title="Chế độ phát" className="hide-mobile">
+            {playMode === 'SHUFFLE' ? <Shuffle size={22} color="var(--primary)" /> : playMode === 'REPEAT_ONE' ? <Repeat1 size={22} color="var(--primary)" /> : <Shuffle size={22} color="var(--text-muted)" />}
           </button>
           <button onClick={prevSong}><SkipBack size={22} fill="currentColor" /></button>
           <button onClick={togglePlay} className="play-btn">
             {isPlaying ? <Pause size={22} fill="black" /> : <Play size={22} fill="black" style={{ marginLeft: '2px' }} />}
           </button>
           <button onClick={nextSong}><SkipForward size={22} fill="currentColor" /></button>
-          <button onClick={toggleRepeat} title="Repeat" className="hide-mobile">
-            {repeatMode === 'ONE' ? <Repeat1 size={22} color="var(--primary)" /> : <Repeat size={22} color={repeatMode === 'ALL' ? 'var(--primary)' : 'var(--text-muted)'} />}
-          </button>
+          {/* We replace Repeat button with an empty space or something to keep layout symmetrical, but flex layout auto-distributes it if we remove it. Let's just remove it since togglePlayMode handles all 3 states. */}
         </div>
 
         {/* Right: Like/Dislike + Volume + Download (desktop only) */}
@@ -548,15 +552,8 @@ export default function Player() {
           </span>
         </div>
 
-        <button onClick={toggleShuffle} title="Shuffle" style={{ padding: '4px' }}>
-          <Shuffle size={22} color={isShuffle ? 'var(--primary)' : 'var(--text-muted)'} />
-        </button>
-
-        <button onClick={toggleRepeat} title="Repeat" style={{ padding: '4px' }}>
-          {repeatMode === 'ONE'
-            ? <Repeat1 size={22} color="var(--primary)" />
-            : <Repeat size={22} color={repeatMode === 'ALL' ? 'var(--primary)' : 'var(--text-muted)'} />
-          }
+        <button onClick={togglePlayMode} title="Chế độ phát" style={{ padding: '4px' }}>
+          {playMode === 'SHUFFLE' ? <Shuffle size={22} color="var(--primary)" /> : playMode === 'REPEAT_ONE' ? <Repeat1 size={22} color="var(--primary)" /> : <Shuffle size={22} color="var(--text-muted)" />}
         </button>
 
         <button onClick={handleDownload} title="Download" style={{ opacity: 0.75, padding: '4px', color: 'inherit' }}>
@@ -753,11 +750,12 @@ export default function Player() {
         <div className="queue-popup">
           <div className="queue-header" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '12px', paddingBottom: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <h3 onClick={() => setQueueTab('queue')} style={{ margin: 0, cursor: 'pointer', color: queueTab === 'queue' ? 'var(--primary)' : 'var(--text-muted)', fontSize: '1.1rem', fontWeight: 800 }}>Đang phát</h3>
-                <h3 onClick={() => setQueueTab('search')} style={{ margin: 0, cursor: 'pointer', color: queueTab === 'search' ? 'var(--primary)' : 'var(--text-muted)', fontSize: '1.1rem', fontWeight: 800 }}>Tìm kiếm</h3>
+              <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingRight: '8px', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+                <h3 onClick={() => setQueueTab('queue')} style={{ margin: 0, cursor: 'pointer', whiteSpace: 'nowrap', color: queueTab === 'queue' ? 'var(--primary)' : 'var(--text-muted)', fontSize: '1.05rem', fontWeight: 800 }}>Đang phát</h3>
+                <h3 onClick={() => setQueueTab('nextup')} style={{ margin: 0, cursor: 'pointer', whiteSpace: 'nowrap', color: queueTab === 'nextup' ? 'var(--primary)' : 'var(--text-muted)', fontSize: '1.05rem', fontWeight: 800 }}>Phát tiếp</h3>
+                <h3 onClick={() => setQueueTab('search')} style={{ margin: 0, cursor: 'pointer', whiteSpace: 'nowrap', color: queueTab === 'search' ? 'var(--primary)' : 'var(--text-muted)', fontSize: '1.05rem', fontWeight: 800 }}>Tìm kiếm</h3>
               </div>
-              <button onClick={() => setShowQueue(false)} className="queue-close" style={{ margin: 0 }}>
+              <button onClick={() => setShowQueue(false)} className="queue-close" style={{ margin: 0, flexShrink: 0 }}>
                 <X size={20} />
               </button>
             </div>
@@ -781,9 +779,6 @@ export default function Player() {
                   onChange={(e) => setQueueSearchQuery(e.target.value)}
                   style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', padding: '8px 12px', borderRadius: '8px', color: 'white', outline: 'none', fontSize: '0.85rem' }}
                 />
-                <button type="submit" style={{ padding: '8px 12px', background: 'var(--primary)', color: 'black', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Search size={16} />
-                </button>
               </form>
             )}
           </div>
@@ -810,18 +805,56 @@ export default function Player() {
                   {currentIndex === index && isPlaying ? (
                     <div className="loader" style={{ width: '16px', height: '16px', borderWidth: '2px', borderLeftColor: 'var(--primary)', flexShrink: 0 }} />
                   ) : currentIndex !== index ? (
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); removeFromQueue(index); }}
-                      style={{ padding: '4px', opacity: 0.6, color: 'inherit', display: 'flex' }}
-                      title="Xoá khỏi danh sách"
-                    >
-                      <Trash2 size={15} />
-                    </button>
+                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); playSong(song, queue); toast.success('Đang phát'); }} 
+                        style={{ padding: '6px', background: 'var(--primary)', color: 'black', borderRadius: '6px', display: 'flex', alignItems: 'center' }} title="Phát ngay"
+                      >
+                        <Play size={12} fill="black" />
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); addToQueue(song); toast.success('Đã thêm vào danh sách'); }} 
+                        style={{ padding: '6px', background: 'rgba(255,255,255,0.1)', color: 'white', borderRadius: '6px', display: 'flex', alignItems: 'center' }} title="Thêm vào danh sách phát tiếp"
+                      >
+                        <Plus size={12} />
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); removeFromQueue(index); }}
+                        style={{ padding: '6px', background: 'rgba(255,255,255,0.1)', color: 'white', borderRadius: '6px', display: 'flex' }}
+                        title="Xoá khỏi danh sách"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
                   ) : null}
                 </div>
               )) : (
                 <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                   Danh sách trống
+                </div>
+              )
+            ) : queueTab === 'nextup' ? (
+              // NextUp Tab
+              nextUpQueue.length > 0 ? nextUpQueue.map((song, index) => (
+                <div key={`${song.id}-${index}`} className="queue-item" style={{ cursor: 'default' }}>
+                  <img src={getImageUrl(song.image_url, 150)} className="queue-item-thumb" alt={song.title} loading="lazy" />
+                  <div className="queue-item-info" style={{ flex: 1 }}>
+                    <div className="queue-item-title">{song.title}</div>
+                    <div className="queue-item-artist">{song.artist}</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); removeFromNextUp(index); }}
+                      style={{ padding: '6px', background: 'rgba(255,255,255,0.1)', color: 'white', borderRadius: '6px', display: 'flex' }}
+                      title="Xoá khỏi danh sách phát tiếp"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
+              )) : (
+                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  Chưa có bài hát nào được thêm
                 </div>
               )
             ) : (
