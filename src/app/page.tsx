@@ -41,7 +41,7 @@ export default async function Home() {
       <section>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: '800' }}>Mới cập nhật</h2>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: '800' }}>Khám phá</h2>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>
               {songs.length} bài hát
             </span>

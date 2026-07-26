@@ -16,6 +16,7 @@ interface Song {
   views: number;
   likes: number;
   status: string;
+  created_at?: string;
   uploader_id?: number;
   uploader_name?: string;
 }
@@ -25,8 +26,24 @@ interface Props { songs: Song[]; playlists: Playlist[]; }
 
 export default function SongGrid({ songs, playlists }: Props) {
   const [showMenu, setShowMenu] = useState<number | null>(null);
+  const [sortMethod, setSortMethod] = useState<'newest' | 'alpha'>('newest');
+  const [mounted, setMounted] = useState(false);
   const { playSong, currentSong } = usePlayer();
   const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    const saved = localStorage.getItem('bsound_sort_method');
+    if (saved === 'alpha' || saved === 'newest') {
+      setSortMethod(saved);
+    }
+  }, []);
+
+  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const method = e.target.value as 'newest' | 'alpha';
+    setSortMethod(method);
+    localStorage.setItem('bsound_sort_method', method);
+  };
 
   useEffect(() => {
     const grid = gridRef.current;
@@ -78,9 +95,42 @@ export default function SongGrid({ songs, playlists }: Props) {
     );
   }
 
+  const sortedSongs = [...songs].sort((a, b) => {
+    if (sortMethod === 'alpha') {
+      return a.title.localeCompare(b.title);
+    }
+    // Newest
+    const dateA = new Date(a.created_at || 0).getTime();
+    const dateB = new Date(b.created_at || 0).getTime();
+    if (dateA === dateB) return b.id - a.id;
+    return dateB - dateA;
+  });
+
   return (
-    <div className="song-grid" ref={gridRef}>
-      {songs.map((song) => {
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+        {mounted && (
+          <select 
+            value={sortMethod} 
+            onChange={handleSortChange}
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid var(--glass-border)',
+              color: 'white',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              outline: 'none',
+              fontSize: '0.85rem',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="newest" style={{ color: 'black' }}>Mới cập nhật</option>
+            <option value="alpha" style={{ color: 'black' }}>Theo Alphabet</option>
+          </select>
+        )}
+      </div>
+      <div className="song-grid" ref={gridRef}>
+        {sortedSongs.map((song) => {
         const isActive = currentSong?.id === song.id;
         return (
           <div 
@@ -154,6 +204,7 @@ export default function SongGrid({ songs, playlists }: Props) {
           </div>
         );
       })}
+    </div>
     </div>
   );
 }
