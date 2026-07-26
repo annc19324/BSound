@@ -66,9 +66,25 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
   const currentIndexRef = useRef(currentIndex);
 
   useEffect(() => { queueRef.current = queue; }, [queue]);
-  useEffect(() => { isShuffleRef.current = isShuffle; }, [isShuffle]);
-  useEffect(() => { repeatModeRef.current = repeatMode; }, [repeatMode]);
+  useEffect(() => {
+    if (isShuffle !== undefined) isShuffleRef.current = isShuffle;
+  }, [isShuffle]);
+
+  useEffect(() => {
+    if (repeatMode !== undefined) repeatModeRef.current = repeatMode;
+  }, [repeatMode]);
+
   useEffect(() => { currentIndexRef.current = currentIndex; }, [currentIndex]);
+
+  // Load saved preferences on mount
+  useEffect(() => {
+    const savedShuffle = localStorage.getItem('bsound_shuffle');
+    if (savedShuffle !== null) setIsShuffle(savedShuffle === 'true');
+    const savedRepeat = localStorage.getItem('bsound_repeat');
+    if (savedRepeat === 'OFF' || savedRepeat === 'ONE' || savedRepeat === 'ALL') {
+      setRepeatMode(savedRepeat as 'OFF' | 'ONE' | 'ALL');
+    }
+  }, []);
 
   const initWebAudio = () => {
     if (audioCtxRef.current || !audioRef.current) return;
@@ -265,10 +281,21 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const toggleShuffle = () => setIsShuffle(!isShuffle);
+  const toggleShuffle = () => {
+    setIsShuffle(prev => {
+      const next = !prev;
+      localStorage.setItem('bsound_shuffle', next.toString());
+      return next;
+    });
+  };
+
   const toggleRepeat = () => {
-    const modes: ('OFF' | 'ONE' | 'ALL')[] = ['OFF', 'ONE', 'ALL'];
-    setRepeatMode(modes[(modes.indexOf(repeatMode) + 1) % 3]);
+    setRepeatMode(prev => {
+      const modes: ('OFF' | 'ONE' | 'ALL')[] = ['OFF', 'ONE', 'ALL'];
+      const next = modes[(modes.indexOf(prev) + 1) % 3];
+      localStorage.setItem('bsound_repeat', next);
+      return next;
+    });
   };
 
   const seek = (time: number) => {
