@@ -18,6 +18,7 @@ interface PlayerContextType {
   isPlaying: boolean;
   playSong: (song: Song, queue?: Song[]) => void;
   addToQueue: (song: Song) => void;
+  removeFromQueue: (index: number) => void;
   togglePlay: () => void;
   playbackSpeed: number;
   setPlaybackSpeed: (speed: number) => void;
@@ -50,6 +51,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
   const [queue, setQueue] = useState<Song[]>([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
+  const [insertOffset, setInsertOffset] = useState(1);
   const [isShuffle, setIsShuffle] = useState(false);
   const [repeatMode, setRepeatMode] = useState<'OFF' | 'ONE' | 'ALL'>('OFF');
 
@@ -162,6 +164,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
       safePlay();
       setCurrentSong(song);
       setIsPlaying(true);
+      setInsertOffset(1);
       
       // Setup Media Session for background play on Safari/Mobile
       if ('mediaSession' in navigator) {
@@ -180,10 +183,36 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const addToQueue = (song: Song) => {
-    const currentQueue = queueRef.current;
-    const exists = currentQueue.find(s => s.id === song.id);
-    if (!exists) {
-      setQueue([...currentQueue, song]);
+    const currentQueue = [...queueRef.current];
+    const existsIdx = currentQueue.findIndex(s => s.id === song.id);
+    
+    // If it exists in the queue and is after the current index, we might not want to add it again, 
+    // but the user wants to play it next. So we remove it from the old position and insert it next.
+    if (existsIdx !== -1) {
+      if (existsIdx === currentIndexRef.current) return; // Already playing
+      currentQueue.splice(existsIdx, 1);
+      if (existsIdx < currentIndexRef.current) {
+        setCurrentIndex(prev => prev - 1);
+      }
+    }
+    
+    // Insert at currentIndex + insertOffset
+    const insertIdx = currentIndexRef.current + insertOffset;
+    currentQueue.splice(insertIdx, 0, song);
+    setQueue(currentQueue);
+    setInsertOffset(prev => prev + 1);
+  };
+
+  const removeFromQueue = (index: number) => {
+    if (index === currentIndexRef.current) return; // Cannot remove playing song
+    const currentQueue = [...queueRef.current];
+    currentQueue.splice(index, 1);
+    setQueue(currentQueue);
+    if (index < currentIndexRef.current) {
+      setCurrentIndex(prev => prev - 1);
+    }
+    if (index > currentIndexRef.current && index < currentIndexRef.current + insertOffset) {
+      setInsertOffset(prev => prev - 1);
     }
   };
 
@@ -267,7 +296,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <PlayerContext.Provider value={{
-      currentSong, isPlaying, playSong, addToQueue, togglePlay,
+      currentSong, isPlaying, playSong, addToQueue, removeFromQueue, togglePlay,
       playbackSpeed, setPlaybackSpeed, volume, setVolume,
       progress, duration, seek, setSleepTimer, remainingTime,
       queue, currentIndex, isShuffle, toggleShuffle, repeatMode, toggleRepeat, nextSong, prevSong

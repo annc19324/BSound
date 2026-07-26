@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePlayer } from '@/context/PlayerContext';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Gauge, Download, Shuffle, Repeat, Repeat1, ThumbsUp, ThumbsDown, Mic2, Edit2, Camera, Save, X, FileMusic, Disc, ListMusic, LocateFixed, Search, Plus } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Gauge, Download, Shuffle, Repeat, Repeat1, ThumbsUp, ThumbsDown, Mic2, Edit2, Camera, Save, X, FileMusic, Disc, ListMusic, LocateFixed, Search, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getImageUrl } from '@/lib/image';
 
@@ -59,7 +59,7 @@ export default function Player() {
     playbackSpeed, setPlaybackSpeed, volume, setVolume,
     setSleepTimer, remainingTime,
     isShuffle, toggleShuffle, repeatMode, toggleRepeat, nextSong, prevSong,
-    queue, currentIndex, playSong, addToQueue
+    queue, currentIndex, playSong, addToQueue, removeFromQueue
   } = usePlayer();
   const router = useRouter();
 
@@ -77,6 +77,7 @@ export default function Player() {
 
   // Queue Search States
   const [queueTab, setQueueTab] = useState<'queue' | 'search'>('queue');
+  const [queueFilter, setQueueFilter] = useState('');
   const [queueSearchQuery, setQueueSearchQuery] = useState('');
   const [queueSearchResults, setQueueSearchResults] = useState<any[]>([]);
   const [isSearchingQueue, setIsSearchingQueue] = useState(false);
@@ -431,7 +432,7 @@ export default function Player() {
             <LocateFixed size={22} />
           </button>
           {/* Queue Icon */}
-          <button onClick={() => setShowQueue(!showQueue)} title="Danh sách phát" style={{ opacity: showQueue ? 1 : 0.8, color: showQueue ? 'var(--primary)' : 'inherit', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }}>
+          <button onClick={() => setShowQueue(!showQueue)} title="Danh sách phát tiếp theo" style={{ opacity: showQueue ? 1 : 0.8, color: showQueue ? 'var(--primary)' : 'inherit', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }}>
             <ListMusic size={22} />
           </button>
           {/* Vinyl Icon */}
@@ -525,7 +526,7 @@ export default function Player() {
         <button onClick={handleLocateSong} title="Định vị bài hát" style={{ opacity: 0.8, padding: '4px', color: 'inherit', display: 'flex', alignItems: 'center' }}>
           <LocateFixed size={22} />
         </button>
-        <button onClick={() => setShowQueue(!showQueue)} title="Danh sách phát" style={{ opacity: showQueue ? 1 : 0.8, padding: '4px', color: showQueue ? 'var(--primary)' : 'inherit', display: 'flex', alignItems: 'center' }}>
+        <button onClick={() => setShowQueue(!showQueue)} title="Danh sách phát tiếp theo" style={{ opacity: showQueue ? 1 : 0.8, padding: '4px', color: showQueue ? 'var(--primary)' : 'inherit', display: 'flex', alignItems: 'center' }}>
           <ListMusic size={22} />
         </button>
         <button onClick={() => setShowVinyl(!showVinyl)} title="Đĩa nhạc" style={{ opacity: showVinyl ? 1 : 0.8, padding: '4px', color: showVinyl ? 'var(--primary)' : 'inherit', display: 'flex', alignItems: 'center' }}>
@@ -760,6 +761,17 @@ export default function Player() {
                 <X size={20} />
               </button>
             </div>
+            {queueTab === 'queue' && (
+              <div style={{ padding: '0 0 12px 0' }}>
+                <input 
+                  type="text" 
+                  placeholder="Lọc danh sách đang phát..." 
+                  value={queueFilter}
+                  onChange={(e) => setQueueFilter(e.target.value)}
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', padding: '6px 12px', borderRadius: '8px', color: 'white', outline: 'none', fontSize: '0.8rem' }}
+                />
+              </div>
+            )}
             {queueTab === 'search' && (
               <form onSubmit={handleQueueSearch} style={{ display: 'flex', gap: '8px' }}>
                 <input 
@@ -777,12 +789,15 @@ export default function Player() {
           </div>
           <div className="queue-list">
             {queueTab === 'queue' ? (
-              queue.length > 0 ? queue.map((song, idx) => (
+              queue.length > 0 ? queue
+                .map((song, index) => ({ song, index }))
+                .filter(item => item.song.title.toLowerCase().includes(queueFilter.toLowerCase()) || item.song.artist.toLowerCase().includes(queueFilter.toLowerCase()))
+                .map(({ song, index }) => (
                 <div 
-                  key={`${song.id}-${idx}`}
-                  className={`queue-item ${currentIndex === idx ? 'active' : ''}`}
+                  key={`${song.id}-${index}`}
+                  className={`queue-item ${currentIndex === index ? 'active' : ''}`}
                   onClick={() => {
-                    if (currentIndex !== idx) {
+                    if (currentIndex !== index) {
                       playSong(song, queue);
                     }
                   }}
@@ -792,9 +807,17 @@ export default function Player() {
                     <div className="queue-item-title">{song.title}</div>
                     <div className="queue-item-artist">{song.artist}</div>
                   </div>
-                  {currentIndex === idx && isPlaying && (
+                  {currentIndex === index && isPlaying ? (
                     <div className="loader" style={{ width: '16px', height: '16px', borderWidth: '2px', borderLeftColor: 'var(--primary)', flexShrink: 0 }} />
-                  )}
+                  ) : currentIndex !== index ? (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); removeFromQueue(index); }}
+                      style={{ padding: '4px', opacity: 0.6, color: 'inherit', display: 'flex' }}
+                      title="Xoá khỏi danh sách"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  ) : null}
                 </div>
               )) : (
                 <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
