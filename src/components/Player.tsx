@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePlayer } from '@/context/PlayerContext';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Gauge, Download, Shuffle, Repeat, Repeat1, ThumbsUp, ThumbsDown, Mic2, Edit2, Camera, Save, X, FileMusic, Disc, ListMusic, LocateFixed } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Timer, Gauge, Download, Shuffle, Repeat, Repeat1, ThumbsUp, ThumbsDown, Mic2, Edit2, Camera, Save, X, FileMusic, Disc, ListMusic, LocateFixed, Search, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getImageUrl } from '@/lib/image';
 
@@ -59,7 +59,7 @@ export default function Player() {
     playbackSpeed, setPlaybackSpeed, volume, setVolume,
     setSleepTimer, remainingTime,
     isShuffle, toggleShuffle, repeatMode, toggleRepeat, nextSong, prevSong,
-    queue, currentIndex, playSong
+    queue, currentIndex, playSong, addToQueue
   } = usePlayer();
   const router = useRouter();
 
@@ -74,6 +74,22 @@ export default function Player() {
   const [dislikes, setDislikes] = useState(0);
   const [userInteraction, setUserInteraction] = useState<'LIKE' | 'DISLIKE' | null>(null);
   const viewedSongId = useRef<number | null>(null);
+
+  // Queue Search States
+  const [queueTab, setQueueTab] = useState<'queue' | 'search'>('queue');
+  const [queueSearchQuery, setQueueSearchQuery] = useState('');
+  const [queueSearchResults, setQueueSearchResults] = useState<any[]>([]);
+  const [isSearchingQueue, setIsSearchingQueue] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('bsound_vinyl_scale');
+    if (saved) setVinylScale(parseFloat(saved));
+  }, []);
+
+  const handleVinylScaleChange = (val: number) => {
+    setVinylScale(val);
+    localStorage.setItem('bsound_vinyl_scale', val.toString());
+  };
 
   // Admin and Edit states
   const [isAdmin, setIsAdmin] = useState(false);
@@ -199,6 +215,22 @@ export default function Player() {
   const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) { setEditImage(file); setEditImagePreview(URL.createObjectURL(file)); }
+  };
+
+  const handleQueueSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!queueSearchQuery.trim()) return;
+    setIsSearchingQueue(true);
+    try {
+      const res = await fetch(`/api/songs/search?q=${encodeURIComponent(queueSearchQuery)}`);
+      if (res.ok) {
+        setQueueSearchResults(await res.json());
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSearchingQueue(false);
+    }
   };
 
   const handleEditSongSubmit = async (e: React.FormEvent) => {
@@ -710,7 +742,7 @@ export default function Player() {
             border: '1px solid rgba(243, 186, 47, 0.3)'
           }}>
              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--primary)' }}>Kích thước</span>
-             <input type="range" min="0.5" max="2" step="0.1" value={vinylScale} onChange={(e) => setVinylScale(parseFloat(e.target.value))} style={{ accentColor: 'var(--primary)', width: '100px' }} />
+             <input type="range" min="0.5" max="2" step="0.1" value={vinylScale} onChange={(e) => handleVinylScaleChange(parseFloat(e.target.value))} style={{ accentColor: 'var(--primary)', width: '100px' }} />
           </div>
         </>
       )}
@@ -718,36 +750,98 @@ export default function Player() {
       {/* ── Queue Popup ── */}
       {showQueue && (
         <div className="queue-popup">
-          <div className="queue-header">
-            <h3>Danh sách phát</h3>
-            <button onClick={() => setShowQueue(false)} className="queue-close">
-              <X size={20} />
-            </button>
+          <div className="queue-header" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '12px', paddingBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <h3 onClick={() => setQueueTab('queue')} style={{ margin: 0, cursor: 'pointer', color: queueTab === 'queue' ? 'var(--primary)' : 'var(--text-muted)', fontSize: '1.1rem', fontWeight: 800 }}>Đang phát</h3>
+                <h3 onClick={() => setQueueTab('search')} style={{ margin: 0, cursor: 'pointer', color: queueTab === 'search' ? 'var(--primary)' : 'var(--text-muted)', fontSize: '1.1rem', fontWeight: 800 }}>Tìm kiếm</h3>
+              </div>
+              <button onClick={() => setShowQueue(false)} className="queue-close" style={{ margin: 0 }}>
+                <X size={20} />
+              </button>
+            </div>
+            {queueTab === 'search' && (
+              <form onSubmit={handleQueueSearch} style={{ display: 'flex', gap: '8px' }}>
+                <input 
+                  type="text" 
+                  placeholder="Tìm bài hát..." 
+                  value={queueSearchQuery}
+                  onChange={(e) => setQueueSearchQuery(e.target.value)}
+                  style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', padding: '8px 12px', borderRadius: '8px', color: 'white', outline: 'none', fontSize: '0.85rem' }}
+                />
+                <button type="submit" style={{ padding: '8px 12px', background: 'var(--primary)', color: 'black', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Search size={16} />
+                </button>
+              </form>
+            )}
           </div>
           <div className="queue-list">
-            {queue.length > 0 ? queue.map((song, idx) => (
-              <div 
-                key={`${song.id}-${idx}`}
-                className={`queue-item ${currentIndex === idx ? 'active' : ''}`}
-                onClick={() => {
-                  if (currentIndex !== idx) {
-                    playSong(song, queue);
-                  }
-                }}
-              >
-                <img src={getImageUrl(song.image_url, 150)} className="queue-item-thumb" alt={song.title} loading="lazy" />
-                <div className="queue-item-info">
-                  <div className="queue-item-title">{song.title}</div>
-                  <div className="queue-item-artist">{song.artist}</div>
+            {queueTab === 'queue' ? (
+              queue.length > 0 ? queue.map((song, idx) => (
+                <div 
+                  key={`${song.id}-${idx}`}
+                  className={`queue-item ${currentIndex === idx ? 'active' : ''}`}
+                  onClick={() => {
+                    if (currentIndex !== idx) {
+                      playSong(song, queue);
+                    }
+                  }}
+                >
+                  <img src={getImageUrl(song.image_url, 150)} className="queue-item-thumb" alt={song.title} loading="lazy" />
+                  <div className="queue-item-info">
+                    <div className="queue-item-title">{song.title}</div>
+                    <div className="queue-item-artist">{song.artist}</div>
+                  </div>
+                  {currentIndex === idx && isPlaying && (
+                    <div className="loader" style={{ width: '16px', height: '16px', borderWidth: '2px', borderLeftColor: 'var(--primary)', flexShrink: 0 }} />
+                  )}
                 </div>
-                {currentIndex === idx && isPlaying && (
-                  <div className="loader" style={{ width: '16px', height: '16px', borderWidth: '2px', borderLeftColor: 'var(--primary)', flexShrink: 0 }} />
-                )}
-              </div>
-            )) : (
-              <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                Danh sách trống
-              </div>
+              )) : (
+                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  Danh sách trống
+                </div>
+              )
+            ) : (
+              // Search Tab
+              isSearchingQueue ? (
+                <div style={{ padding: '40px', display: 'flex', justifyContent: 'center' }}>
+                  <div className="loader" style={{ width: '24px', height: '24px' }} />
+                </div>
+              ) : queueSearchResults.length > 0 ? queueSearchResults.map((song) => (
+                <div key={song.id} className="queue-item" style={{ cursor: 'default' }}>
+                  <img src={getImageUrl(song.image_url, 150)} className="queue-item-thumb" alt={song.title} loading="lazy" />
+                  <div className="queue-item-info" style={{ flex: 1 }}>
+                    <div className="queue-item-title">{song.title}</div>
+                    <div className="queue-item-artist">{song.artist}</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                    <button 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        playSong(song, [...queue.filter(s => s.id !== song.id), song]); 
+                        toast.success('Đang phát'); 
+                      }} 
+                      style={{ padding: '6px 10px', background: 'var(--primary)', color: 'black', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}
+                    >
+                      <Play size={12} fill="black" /> Phát
+                    </button>
+                    <button 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        addToQueue(song); 
+                        toast.success('Đã thêm vào danh sách'); 
+                      }} 
+                      style={{ padding: '6px 10px', background: 'rgba(255,255,255,0.1)', color: 'white', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }}
+                    >
+                      <Plus size={12} /> Thêm
+                    </button>
+                  </div>
+                </div>
+              )) : (
+                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  {queueSearchQuery ? 'Không tìm thấy bài hát nào' : 'Hãy nhập tên bài hát để tìm kiếm'}
+                </div>
+              )
             )}
           </div>
         </div>

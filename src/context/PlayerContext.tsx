@@ -17,6 +17,7 @@ interface PlayerContextType {
   currentSong: Song | null;
   isPlaying: boolean;
   playSong: (song: Song, queue?: Song[]) => void;
+  addToQueue: (song: Song) => void;
   togglePlay: () => void;
   playbackSpeed: number;
   setPlaybackSpeed: (speed: number) => void;
@@ -178,6 +179,14 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const addToQueue = (song: Song) => {
+    const currentQueue = queueRef.current;
+    const exists = currentQueue.find(s => s.id === song.id);
+    if (!exists) {
+      setQueue([...currentQueue, song]);
+    }
+  };
+
   // Setup Media Session Handlers
   useEffect(() => {
     if ('mediaSession' in navigator) {
@@ -258,7 +267,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <PlayerContext.Provider value={{
-      currentSong, isPlaying, playSong, togglePlay,
+      currentSong, isPlaying, playSong, addToQueue, togglePlay,
       playbackSpeed, setPlaybackSpeed, volume, setVolume,
       progress, duration, seek, setSleepTimer, remainingTime,
       queue, currentIndex, isShuffle, toggleShuffle, repeatMode, toggleRepeat, nextSong, prevSong
