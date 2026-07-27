@@ -1,6 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { KeepAwake } from '@capacitor-community/keep-awake';
 
 interface Song {
   id: number;
@@ -58,6 +60,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const wakeLockRef = useRef<any>(null);
 
   const queueRef = useRef(queue);
   const playModeRef = useRef(playMode);
@@ -83,6 +86,53 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
       if (savedShuffle === 'true') setPlayMode('SHUFFLE');
     }
   }, []);
+
+  // Manage screen wake lock when playing state changes
+  useEffect(() => {
+    const handleWakeLock = async () => {
+      try {
+        if (isPlaying) {
+          if (Capacitor.isNativePlatform()) {
+            await KeepAwake.keepAwake();
+          } else if ('wakeLock' in navigator) {
+            wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+          }
+        } else {
+          if (Capacitor.isNativePlatform()) {
+            await KeepAwake.allowSleep();
+          } else if (wakeLockRef.current) {
+            await wakeLockRef.current.release();
+            wakeLockRef.current = null;
+          }
+        }
+      } catch (err) {
+        console.error('Wake lock error:', err);
+      }
+    };
+
+    handleWakeLock();
+
+    // The browser releases wake locks when the tab is hidden, so we must re-acquire it when visible.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isPlaying) {
+        handleWakeLock();
+      }
+    };
+
+    if (!Capacitor.isNativePlatform()) {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
+    return () => {
+      if (!Capacitor.isNativePlatform()) {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
+      // When unmounting, release it if possible
+      if (!Capacitor.isNativePlatform() && wakeLockRef.current) {
+        wakeLockRef.current.release().catch(() => {});
+      }
+    };
+  }, [isPlaying]);
 
   const initWebAudio = () => {
     if (audioCtxRef.current || !audioRef.current) return;
