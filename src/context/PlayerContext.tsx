@@ -61,7 +61,10 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
   const gainNodeRef = useRef<GainNode | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const wakeLockRef = useRef<any>(null);
-
+  
+  const lastSyncStateRef = useRef(JSON.stringify({ queue: [], nextUpQueue: [], currentIndex: -1 }));
+  const isPlayingRef = useRef(isPlaying);
+  
   const queueRef = useRef(queue);
   const playModeRef = useRef(playMode);
   const currentIndexRef = useRef(currentIndex);
@@ -74,6 +77,70 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => { nextUpQueueRef.current = nextUpQueue; }, [nextUpQueue]);
 
   useEffect(() => { currentIndexRef.current = currentIndex; }, [currentIndex]);
+  useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
+
+  // Push changes to server (sync up)
+  useEffect(() => {
+    const currentStateStr = JSON.stringify({ queue, nextUpQueue, currentIndex });
+    if (currentStateStr !== lastSyncStateRef.current) {
+      lastSyncStateRef.current = currentStateStr;
+      const syncUp = async () => {
+        try {
+          await fetch('/api/queue/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: currentStateStr
+          });
+        } catch (e) {}
+      };
+      const t = setTimeout(syncUp, 500);
+      return () => clearTimeout(t);
+    }
+  }, [queue, nextUpQueue, currentIndex]);
+
+  // Pull changes from server (sync down)
+  useEffect(() => {
+    const fetchSync = async () => {
+      try {
+        const res = await fetch('/api/queue/sync');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.error) return; // not logged in
+          
+          const serverStateStr = JSON.stringify({ queue: data.queue, nextUpQueue: data.nextUpQueue, currentIndex: data.currentIndex });
+          if (serverStateStr !== lastSyncStateRef.current) {
+            lastSyncStateRef.current = serverStateStr;
+            setQueue(data.queue);
+            setNextUpQueue(data.nextUpQueue);
+            
+            if (data.currentIndex !== currentIndexRef.current) {
+              setCurrentIndex(data.currentIndex);
+              const song = data.queue[data.currentIndex];
+              if (song && audioRef.current) {
+                audioRef.current.src = song.file_url;
+                setCurrentSong(song);
+                if (isPlayingRef.current) {
+                  audioRef.current.play().catch(()=>{});
+                }
+                if ('mediaSession' in navigator) {
+                  navigator.mediaSession.metadata = new MediaMetadata({
+                    title: song.title,
+                    artist: song.artist,
+                    album: 'BSound',
+                    artwork: song.image_url ? [{ src: song.image_url, sizes: '512x512', type: 'image/jpeg' }] : []
+                  });
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {}
+    };
+
+    fetchSync();
+    const interval = setInterval(fetchSync, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Load saved preferences on mount
   useEffect(() => {
