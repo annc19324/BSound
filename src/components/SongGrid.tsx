@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { usePlayer } from '@/context/PlayerContext';
-import { MoreVertical, Heart, Headphones, Music } from 'lucide-react';
+import { MoreVertical, Heart, Headphones, Music, StickyNote } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { getImageUrl } from '@/lib/image';
@@ -108,11 +108,31 @@ export default function SongGrid({ songs, playlists }: Props) {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
         {mounted && (
-          <select 
-            value={sortMethod} 
-            onChange={handleSortChange}
+          <>
+            <button 
+              onClick={() => window.dispatchEvent(new Event('open-notes'))}
+              title="Ghi chú"
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid var(--glass-border)',
+                color: 'var(--primary)',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                fontWeight: 600
+              }}
+            >
+              <StickyNote size={16} />
+            </button>
+            <select 
+              value={sortMethod} 
+              onChange={handleSortChange}
             style={{
               background: 'rgba(255,255,255,0.05)',
               border: '1px solid var(--glass-border)',
@@ -124,9 +144,10 @@ export default function SongGrid({ songs, playlists }: Props) {
               cursor: 'pointer'
             }}
           >
-            <option value="newest" style={{ color: 'black' }}>Mới cập nhật</option>
-            <option value="alpha" style={{ color: 'black' }}>Theo Alphabet</option>
-          </select>
+              <option value="newest" style={{ color: 'black' }}>Mới cập nhật</option>
+              <option value="alpha" style={{ color: 'black' }}>Theo Alphabet</option>
+            </select>
+          </>
         )}
       </div>
       <div className="song-grid" ref={gridRef}>
