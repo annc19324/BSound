@@ -52,12 +52,14 @@ export default function Sidebar() {
 
   // Notes state
   const [showNotes, setShowNotes] = useState(false);
-  const [notes, setNotes] = useState<{ id: number, text: string, date: number }[]>([]);
+  const [notes, setNotes] = useState<{ id: number, text: string, date: number, duration: number }[]>([]);
   const [newNote, setNewNote] = useState('');
+  const [noteDuration, setNoteDuration] = useState(3);
+  const [currentTime, setCurrentTime] = useState(Date.now());
 
   const addNote = () => {
     if (!newNote.trim()) return;
-    const next = [...notes, { id: Date.now(), text: newNote, date: Date.now() }];
+    const next = [...notes, { id: Date.now(), text: newNote, date: Date.now(), duration: noteDuration }];
     setNotes(next);
     setNewNote('');
     localStorage.setItem('bsound_notes', JSON.stringify(next));
@@ -68,6 +70,37 @@ export default function Sidebar() {
     setNotes(next);
     localStorage.setItem('bsound_notes', JSON.stringify(next));
   };
+
+  useEffect(() => {
+    const handleOpenNotes = () => setShowNotes(true);
+    // Bind to document to ensure it catches globally
+    document.addEventListener('open-notes', handleOpenNotes);
+    return () => document.removeEventListener('open-notes', handleOpenNotes);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+      setNotes(prev => {
+        let changed = false;
+        const next = prev.filter(n => {
+          const ageSecs = (Date.now() - n.date) / 1000;
+          const durationSecs = (n.duration || 3) * 60;
+          if (ageSecs >= durationSecs) {
+            changed = true;
+            return false;
+          }
+          return true;
+        });
+        if (changed) {
+          localStorage.setItem('bsound_notes', JSON.stringify(next));
+          return next;
+        }
+        return prev;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -308,18 +341,46 @@ export default function Sidebar() {
                 rows={3}
                 style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', padding: '8px', color: 'white', borderRadius: '8px', outline: 'none', resize: 'none' }}
               />
-              <button onClick={addNote} style={{ padding: '8px', background: 'var(--primary)', color: 'black', borderRadius: '8px', fontWeight: 600 }}>Thêm Ghi chú</button>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Thời gian (phút):</span>
+                  <input 
+                    type="number" min="1" max="1440" 
+                    value={noteDuration} 
+                    onChange={e => setNoteDuration(parseInt(e.target.value) || 3)}
+                    style={{ width: '50px', background: 'rgba(255,255,255,0.1)', border: '1px solid var(--glass-border)', color: 'white', padding: '4px', borderRadius: '4px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <button onClick={addNote} style={{ padding: '8px 12px', background: 'var(--primary)', color: 'black', borderRadius: '8px', fontWeight: 600 }}>Thêm</button>
+              </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px', maxHeight: '300px', overflowY: 'auto' }}>
               {notes.length === 0 ? (
                 <div style={{ color: 'var(--text-muted)', textAlign: 'center', fontSize: '0.85rem' }}>Chưa có ghi chú nào</div>
-              ) : notes.slice().reverse().map(note => (
-                <div key={note.id} style={{ background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                  <div style={{ color: 'white', fontSize: '0.9rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', flex: 1 }}>{note.text}</div>
-                  <button onClick={() => deleteNote(note.id)} style={{ color: '#ff4444', opacity: 0.8, padding: '2px', cursor: 'pointer' }}><Trash2 size={16} /></button>
-                </div>
-              ))}
+              ) : notes.slice().reverse().map(note => {
+                const ageSecs = (currentTime - note.date) / 1000;
+                const durationSecs = (note.duration || 3) * 60;
+                const remaining = durationSecs - ageSecs;
+                const opacity = remaining <= 0 ? 0 : (remaining <= 30 ? remaining / 30 : 1);
+                
+                return (
+                  <div key={note.id} style={{ 
+                    background: 'rgba(255,255,255,0.05)', 
+                    padding: '8px 12px', 
+                    borderRadius: '8px', 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'flex-start', 
+                    gap: '8px',
+                    opacity: opacity,
+                    transition: 'opacity 1s linear'
+                  }}>
+                    <div style={{ color: 'white', fontSize: '0.9rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', flex: 1 }}>{note.text}</div>
+                    <button onClick={() => deleteNote(note.id)} style={{ color: '#ff4444', opacity: 0.8, padding: '2px', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

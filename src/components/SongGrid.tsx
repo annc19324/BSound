@@ -112,7 +112,11 @@ export default function SongGrid({ songs, playlists }: Props) {
         {mounted && (
           <>
             <button 
-              onClick={() => window.dispatchEvent(new Event('open-notes'))}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                document.dispatchEvent(new Event('open-notes'));
+              }}
               title="Ghi chú"
               style={{
                 background: 'rgba(255,255,255,0.05)',
