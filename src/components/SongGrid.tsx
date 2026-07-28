@@ -110,33 +110,9 @@ export default function SongGrid({ songs, playlists }: Props) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
         {mounted && (
-          <>
-            <button 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                document.dispatchEvent(new Event('open-notes'));
-              }}
-              title="Ghi chú"
-              style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid var(--glass-border)',
-                color: 'var(--primary)',
-                padding: '6px 12px',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                fontWeight: 600
-              }}
-            >
-              <StickyNote size={16} />
-            </button>
-            <select 
-              value={sortMethod} 
-              onChange={handleSortChange}
+          <select 
+            value={sortMethod} 
+            onChange={handleSortChange}
             style={{
               background: 'rgba(255,255,255,0.05)',
               border: '1px solid var(--glass-border)',
@@ -150,8 +126,7 @@ export default function SongGrid({ songs, playlists }: Props) {
           >
               <option value="newest" style={{ color: 'black' }}>Mới cập nhật</option>
               <option value="alpha" style={{ color: 'black' }}>Theo Alphabet</option>
-            </select>
-          </>
+          </select>
         )}
       </div>
       <div className="song-grid" ref={gridRef}>

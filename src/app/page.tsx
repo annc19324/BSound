@@ -3,6 +3,7 @@ import Link from 'next/link';
 import SongGrid from '@/components/SongGrid';
 import DownloadAppButton from '@/components/DownloadAppButton';
 import RefreshButton from '@/components/RefreshButton';
+import NotesTrigger from '@/components/NotesTrigger';
 
 // Bypass build-time prerendering since DB might not be accessible during build
 export const dynamic = 'force-dynamic';
@@ -30,6 +31,7 @@ export default async function Home() {
           <h1 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '2.5rem', fontWeight: '900', letterSpacing: '-1px', lineHeight: 1, margin: 0 }}>
             B <span style={{ color: 'var(--primary)' }}>Sound</span>
             <RefreshButton />
+            <NotesTrigger />
           </h1>
           <DownloadAppButton />
         </div>
