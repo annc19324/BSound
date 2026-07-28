@@ -12,12 +12,12 @@ export default function manifest(): MetadataRoute.Manifest {
     orientation: 'portrait-primary',
     icons: [
       {
-        src: '/icon.png', // Tạm thời dùng đường dẫn này, bạn cần có file icon thật trong thư mục public
+        src: '/bsound.png',
         sizes: '192x192',
         type: 'image/png',
       },
       {
-        src: '/icon-512x512.png',
+        src: '/bsound.png',
         sizes: '512x512',
         type: 'image/png',
       },
