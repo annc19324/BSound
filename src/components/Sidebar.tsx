@@ -9,6 +9,83 @@ import {
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 
+function DraggableNote({ note, onDelete, onMove, currentTime }: any) {
+  const [pos, setPos] = useState({ x: note.x || 20, y: note.y || 150 });
+  const dragging = useRef(false);
+  const startTouch = useRef({ x: 0, y: 0, noteX: 0, noteY: 0 });
+
+  useEffect(() => {
+    setPos({ x: note.x || 20, y: note.y || 150 });
+  }, [note.x, note.y]);
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // Only drag if not clicking the delete button
+    if ((e.target as HTMLElement).closest('button')) return;
+    dragging.current = true;
+    startTouch.current = { x: e.clientX, y: e.clientY, noteX: pos.x, noteY: pos.y };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragging.current) return;
+    const dx = e.clientX - startTouch.current.x;
+    const dy = e.clientY - startTouch.current.y;
+    setPos({ x: startTouch.current.noteX + dx, y: startTouch.current.noteY + dy });
+  };
+  const onPointerUp = () => {
+    if (!dragging.current) return;
+    dragging.current = false;
+    onMove(note.id, pos.x, pos.y);
+  };
+
+  const ageSecs = (currentTime - note.date) / 1000;
+  const durationSecs = (note.duration || 3) * 60;
+  const remaining = durationSecs - ageSecs;
+  const opacity = remaining <= 0 ? 0 : (remaining <= 30 ? remaining / 30 : 1);
+
+  if (opacity <= 0) return null;
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        left: pos.x,
+        top: pos.y,
+        zIndex: 9999,
+        background: 'var(--primary)',
+        color: 'black',
+        padding: '12px',
+        borderRadius: '12px',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+        cursor: dragging.current ? 'grabbing' : 'grab',
+        userSelect: 'none',
+        opacity: opacity,
+        transition: dragging.current ? 'none' : 'opacity 1s linear',
+        maxWidth: '250px',
+        wordBreak: 'break-word',
+        whiteSpace: 'pre-wrap',
+        fontSize: '0.95rem',
+        fontWeight: 600,
+        touchAction: 'none'
+      }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', alignItems: 'center' }}>
+        <div style={{ fontSize: '0.7rem', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '1px' }}>Ghi chú</div>
+        <button 
+          onClick={(e) => { e.stopPropagation(); onDelete(note.id); }} 
+          style={{ color: 'black', opacity: 0.6, cursor: 'pointer', padding: '2px', background: 'transparent', border: 'none', display: 'flex' }}
+        >
+          <X size={16} />
+        </button>
+      </div>
+      <div style={{ cursor: 'text', userSelect: 'text' }}>{note.text}</div>
+    </div>
+  );
+}
+
 export default function Sidebar() {
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [user, setUser] = useState<any>(undefined);
@@ -52,17 +129,33 @@ export default function Sidebar() {
 
   // Notes state
   const [showNotes, setShowNotes] = useState(false);
-  const [notes, setNotes] = useState<{ id: number, text: string, date: number, duration: number }[]>([]);
+  const [notes, setNotes] = useState<{ id: number, text: string, date: number, duration: number, x?: number, y?: number }[]>([]);
   const [newNote, setNewNote] = useState('');
   const [noteDuration, setNoteDuration] = useState(3);
   const [currentTime, setCurrentTime] = useState(Date.now());
 
   const addNote = () => {
     if (!newNote.trim()) return;
-    const next = [...notes, { id: Date.now(), text: newNote, date: Date.now(), duration: noteDuration }];
+    const next = [...notes, { 
+      id: Date.now(), 
+      text: newNote, 
+      date: Date.now(), 
+      duration: noteDuration,
+      x: 20 + Math.random() * 50,
+      y: 150 + Math.random() * 50
+    }];
     setNotes(next);
     setNewNote('');
+    setShowNotes(false); // Close modal on create to immediately see the floating note
     localStorage.setItem('bsound_notes', JSON.stringify(next));
+  };
+
+  const updateNotePos = (id: number, x: number, y: number) => {
+    setNotes(prev => {
+      const next = prev.map(n => n.id === id ? { ...n, x, y } : n);
+      localStorage.setItem('bsound_notes', JSON.stringify(next));
+      return next;
+    });
   };
 
   const deleteNote = (id: number) => {
@@ -188,6 +281,11 @@ export default function Sidebar() {
       )}
 
       {isOpen && <div className="sidebar-backdrop" onClick={close} />}
+      
+      {/* ── Draggable Notes on screen ── */}
+      {mounted && notes.map(note => (
+        <DraggableNote key={note.id} note={note} onDelete={deleteNote} onMove={updateNotePos} currentTime={currentTime} />
+      ))}
 
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
 
@@ -338,49 +436,21 @@ export default function Sidebar() {
                 value={newNote} 
                 onChange={e => setNewNote(e.target.value)} 
                 placeholder="Nhập ghi chú mới..."
-                rows={3}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', padding: '8px', color: 'white', borderRadius: '8px', outline: 'none', resize: 'none' }}
+                rows={4}
+                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', padding: '12px', color: 'white', borderRadius: '8px', outline: 'none', resize: 'none' }}
               />
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Thời gian (phút):</span>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Thời gian (phút):</span>
                   <input 
                     type="number" min="1" max="1440" 
                     value={noteDuration} 
                     onChange={e => setNoteDuration(parseInt(e.target.value) || 3)}
-                    style={{ width: '50px', background: 'rgba(255,255,255,0.1)', border: '1px solid var(--glass-border)', color: 'white', padding: '4px', borderRadius: '4px', fontSize: '0.85rem' }}
+                    style={{ width: '60px', background: 'rgba(255,255,255,0.1)', border: '1px solid var(--glass-border)', color: 'white', padding: '6px', borderRadius: '4px', fontSize: '0.85rem' }}
                   />
                 </div>
-                <button onClick={addNote} style={{ padding: '8px 12px', background: 'var(--primary)', color: 'black', borderRadius: '8px', fontWeight: 600 }}>Thêm</button>
+                <button onClick={addNote} style={{ padding: '8px 16px', background: 'var(--primary)', color: 'black', borderRadius: '8px', fontWeight: 600 }}>Tạo ngay</button>
               </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px', maxHeight: '300px', overflowY: 'auto' }}>
-              {notes.length === 0 ? (
-                <div style={{ color: 'var(--text-muted)', textAlign: 'center', fontSize: '0.85rem' }}>Chưa có ghi chú nào</div>
-              ) : notes.slice().reverse().map(note => {
-                const ageSecs = (currentTime - note.date) / 1000;
-                const durationSecs = (note.duration || 3) * 60;
-                const remaining = durationSecs - ageSecs;
-                const opacity = remaining <= 0 ? 0 : (remaining <= 30 ? remaining / 30 : 1);
-                
-                return (
-                  <div key={note.id} style={{ 
-                    background: 'rgba(255,255,255,0.05)', 
-                    padding: '8px 12px', 
-                    borderRadius: '8px', 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'flex-start', 
-                    gap: '8px',
-                    opacity: opacity,
-                    transition: 'opacity 1s linear'
-                  }}>
-                    <div style={{ color: 'white', fontSize: '0.9rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', flex: 1 }}>{note.text}</div>
-                    <button onClick={() => deleteNote(note.id)} style={{ color: '#ff4444', opacity: 0.8, padding: '2px', cursor: 'pointer' }}><Trash2 size={16} /></button>
-                  </div>
-                );
-              })}
             </div>
           </div>
         </div>
