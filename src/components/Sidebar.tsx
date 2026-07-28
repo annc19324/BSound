@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   Home, Search, Library, PlusSquare, Heart, Music,
   LogOut, LogIn, UserPlus, X, CheckCircle, MessageSquare,
-  Menu, User, LayoutDashboard, Bell, Download
+  Menu, User, LayoutDashboard, Bell, Download, Trash2
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -35,6 +35,12 @@ export default function Sidebar() {
         if (typeof pos.x === 'number' && typeof pos.y === 'number') setFabPos(pos);
       } catch (e) {}
     }
+    
+    // Load notes
+    const savedNotes = localStorage.getItem('bsound_notes');
+    if (savedNotes) {
+      try { setNotes(JSON.parse(savedNotes)); } catch (e) {}
+    }
   }, []);
 
   // Save position whenever it changes
@@ -43,6 +49,25 @@ export default function Sidebar() {
       localStorage.setItem('bsound_fab_pos', JSON.stringify(fabPos));
     }
   }, [fabPos]);
+
+  // Notes state
+  const [showNotes, setShowNotes] = useState(false);
+  const [notes, setNotes] = useState<{ id: number, text: string, date: number }[]>([]);
+  const [newNote, setNewNote] = useState('');
+
+  const addNote = () => {
+    if (!newNote.trim()) return;
+    const next = [...notes, { id: Date.now(), text: newNote, date: Date.now() }];
+    setNotes(next);
+    setNewNote('');
+    localStorage.setItem('bsound_notes', JSON.stringify(next));
+  };
+
+  const deleteNote = (id: number) => {
+    const next = notes.filter(n => n.id !== id);
+    setNotes(next);
+    localStorage.setItem('bsound_notes', JSON.stringify(next));
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -118,6 +143,7 @@ export default function Sidebar() {
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
+          onDoubleClick={() => { setShowNotes(true); setIsOpen(false); }}
           aria-label="Mở menu"
         >
           <Menu size={22} />
@@ -133,7 +159,7 @@ export default function Sidebar() {
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
 
         {/* ── Logo ── */}
-        <div className="sb-logo-row">
+        <div className="sb-logo-row" onDoubleClick={() => setShowNotes(true)}>
           <Link href="/" onClick={close} className="sb-logo-link">
             <img src="/bsound.png" alt="BSound" className="sb-logo-img" />
             <span className="sb-logo-text">BSound</span>
@@ -264,6 +290,40 @@ export default function Sidebar() {
           </div>
         )}
       </aside>
+
+      {/* ── Notes Modal ── */}
+      {showNotes && (
+        <div className="modal-overlay" onClick={() => setShowNotes(false)} style={{ zIndex: 10000 }}>
+          <div className="modal-content glass" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="modal-header">
+              <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'white' }}>Ghi chú</h2>
+              <button onClick={() => setShowNotes(false)} style={{ color: 'var(--text-muted)' }}><X size={20} /></button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <textarea 
+                value={newNote} 
+                onChange={e => setNewNote(e.target.value)} 
+                placeholder="Nhập ghi chú mới..."
+                rows={3}
+                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', padding: '8px', color: 'white', borderRadius: '8px', outline: 'none', resize: 'none' }}
+              />
+              <button onClick={addNote} style={{ padding: '8px', background: 'var(--primary)', color: 'black', borderRadius: '8px', fontWeight: 600 }}>Thêm Ghi chú</button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px', maxHeight: '300px', overflowY: 'auto' }}>
+              {notes.length === 0 ? (
+                <div style={{ color: 'var(--text-muted)', textAlign: 'center', fontSize: '0.85rem' }}>Chưa có ghi chú nào</div>
+              ) : notes.slice().reverse().map(note => (
+                <div key={note.id} style={{ background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                  <div style={{ color: 'white', fontSize: '0.9rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', flex: 1 }}>{note.text}</div>
+                  <button onClick={() => deleteNote(note.id)} style={{ color: '#ff4444', opacity: 0.8, padding: '2px', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
