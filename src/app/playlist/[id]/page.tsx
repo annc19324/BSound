@@ -9,7 +9,7 @@ export default function PlaylistPage({ params }: { params: Promise<{ id: string 
   const { id } = use(params);
   const [songs, setSongs] = useState<any[]>([]);
   const [allSongs, setAllSongs] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSongId, setSelectedSongId] = useState<string>('');
   const [playlist, setPlaylist] = useState<any>(null);
   const { playSong } = usePlayer();
 
@@ -54,10 +54,13 @@ export default function PlaylistPage({ params }: { params: Promise<{ id: string 
   };
 
   const availableSongs = allSongs.filter(s => !songs.find(ps => ps.id === s.id));
-  const filteredAvailable = availableSongs.filter(s => 
-    s.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    s.artist.toLowerCase().includes(searchQuery.toLowerCase())
-  ).slice(0, 5); // Show top 5 results
+
+  const handleAddSelected = () => {
+    if (selectedSongId) {
+      addSong(parseInt(selectedSongId));
+      setSelectedSongId('');
+    }
+  };
 
   return (
     <div className="fade-in">
@@ -117,36 +120,47 @@ export default function PlaylistPage({ params }: { params: Promise<{ id: string 
         <h2 style={{ fontSize: '1.2rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Plus size={20} /> Thêm bài hát vào My playlist
         </h2>
-        <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '12px 16px', border: '1px solid var(--glass-border)', marginBottom: '16px' }}>
-          <Search size={18} style={{ color: 'var(--text-muted)', marginRight: '12px' }} />
-          <input 
-            type="text" 
-            placeholder="Tìm kiếm bài hát..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ background: 'transparent', border: 'none', color: 'white', width: '100%', outline: 'none', fontSize: '0.95rem' }} 
-          />
-        </div>
         
-        {searchQuery && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {filteredAvailable.map(song => (
-              <div key={song.id} style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: '600', fontSize: '0.95rem' }}>{song.title}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{song.artist}</div>
-                </div>
-                <button 
-                  onClick={() => addSong(song.id)}
-                  style={{ background: 'var(--primary)', color: 'black', border: 'none', padding: '6px 16px', borderRadius: '20px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer' }}
-                >
-                  Thêm
-                </button>
-              </div>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <select
+            value={selectedSongId}
+            onChange={(e) => setSelectedSongId(e.target.value)}
+            style={{
+              flex: 1,
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: '8px',
+              padding: '12px 16px',
+              color: 'white',
+              fontSize: '0.95rem',
+              outline: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="" style={{ color: 'black' }}>-- Chọn bài hát --</option>
+            {availableSongs.map(song => (
+              <option key={song.id} value={song.id} style={{ color: 'black' }}>
+                {song.title} - {song.artist}
+              </option>
             ))}
-            {filteredAvailable.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Không tìm thấy bài hát phù hợp.</p>}
-          </div>
-        )}
+          </select>
+          <button
+            onClick={handleAddSelected}
+            disabled={!selectedSongId}
+            style={{
+              background: selectedSongId ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
+              color: selectedSongId ? 'black' : 'var(--text-muted)',
+              border: 'none',
+              padding: '0 24px',
+              borderRadius: '8px',
+              fontWeight: '700',
+              cursor: selectedSongId ? 'pointer' : 'not-allowed',
+              transition: 'var(--transition-smooth)'
+            }}
+          >
+            Thêm
+          </button>
+        </div>
       </div>
     </div>
   );
