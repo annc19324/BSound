@@ -358,7 +358,7 @@ export default function Sidebar() {
         <nav className="sb-section sb-nav">
           <Link href="/"       className={`sb-item ${isActive('/')}`}       onClick={close}><Home size={18} /> Trang chủ</Link>
           <Link href="/search" className={`sb-item ${isActive('/search')}`} onClick={close}><Search size={18} /> Tìm kiếm</Link>
-          <Link href="/library" className={`sb-item ${isActive('/library')}`} onClick={close}><Library size={18} /> Thư viện</Link>
+          <Link href="/library" className={`sb-item ${isActive('/library')}`} onClick={close}><Library size={18} /> My playlist</Link>
           <Link href="/download" className={`sb-item ${isActive('/download')}`} onClick={close}><Download size={18} /> Tải toàn bộ bài hát</Link>
         </nav>
 
@@ -403,7 +403,7 @@ export default function Sidebar() {
         {/* ── Playlists ── */}
         {playlists.length > 0 && (
           <div className="sb-section" style={{ flex: 1, overflowY: 'auto' }}>
-            <div className="sb-label">Playlist của bạn</div>
+            <div className="sb-label">My playlist</div>
             {playlists.map(p => (
               <Link key={p.id} href={`/playlist/${p.id}`} className="sb-item" style={{ fontSize: '0.82rem' }} onClick={close}>
                 <Music size={15} /> {p.name}

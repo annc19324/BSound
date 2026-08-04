@@ -64,7 +64,7 @@ export default function LibraryPage() {
   return (
     <div className="fade-in">
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '1.8rem', fontWeight: '900' }}>Thư viện</h1>
+        <h1 style={{ fontSize: '1.8rem', fontWeight: '900' }}>My playlist</h1>
         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>
           {playlists.length} playlist
         </span>

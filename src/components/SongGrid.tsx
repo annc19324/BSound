@@ -22,12 +22,13 @@ interface Song {
 }
 
 interface Playlist { id: number; name: string; }
-interface Props { songs: Song[]; playlists: Playlist[]; }
+interface Props { songs: Song[]; }
 
-export default function SongGrid({ songs, playlists }: Props) {
+export default function SongGrid({ songs }: Props) {
   const [showMenu, setShowMenu] = useState<number | null>(null);
   const [sortMethod, setSortMethod] = useState<'newest' | 'alpha'>('newest');
   const [mounted, setMounted] = useState(false);
+  const [userPlaylists, setUserPlaylists] = useState<Playlist[]>([]);
   const { playSong, currentSong } = usePlayer();
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -37,6 +38,11 @@ export default function SongGrid({ songs, playlists }: Props) {
     if (saved === 'alpha' || saved === 'newest') {
       setSortMethod(saved);
     }
+
+    fetch('/api/playlists')
+      .then(res => res.json())
+      .then(data => { if (Array.isArray(data)) setUserPlaylists(data); })
+      .catch(() => {});
   }, []);
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -186,17 +192,18 @@ export default function SongGrid({ songs, playlists }: Props) {
                 </button>
                 {showMenu === song.id && (
                   <div className="song-menu-dropdown">
-                    <div className="song-menu-label">Thêm vào Playlist</div>
-                    <div style={{ maxHeight: '140px', overflowY: 'auto' }}>
-                      {playlists.length === 0
-                        ? <div style={{ padding: '8px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>Chưa có playlist nào</div>
-                        : playlists.map(p => (
-                          <div key={p.id} onClick={() => addToPlaylist(song.id, p.id)} className="song-menu-item">
-                            {p.name}
-                          </div>
-                        ))
-                      }
+                    <div style={{ padding: '8px', borderBottom: '1px solid var(--glass-border)' }}>
+                      Thêm vào My playlist:
                     </div>
+                    {userPlaylists.length === 0 ? (
+                      <div style={{ padding: '10px 16px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Chưa có playlist nào</div>
+                    ) : (
+                      userPlaylists.map(p => (
+                        <button key={p.id} onClick={(e) => { e.stopPropagation(); addToPlaylist(song.id, p.id); }} className="song-menu-item">
+                          <Music size={14} /> {p.name}
+                        </button>
+                      ))
+                    )}
                   </div>
                 )}
               </div>
