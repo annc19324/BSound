@@ -9,7 +9,8 @@ export default function PlaylistPage({ params }: { params: Promise<{ id: string 
   const { id } = use(params);
   const [songs, setSongs] = useState<any[]>([]);
   const [allSongs, setAllSongs] = useState<any[]>([]);
-  const [selectedSongId, setSelectedSongId] = useState<string>('');
+  const [selectedSongIds, setSelectedSongIds] = useState<number[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [playlist, setPlaylist] = useState<any>(null);
   const { playSong } = usePlayer();
 
@@ -30,13 +31,13 @@ export default function PlaylistPage({ params }: { params: Promise<{ id: string 
       });
   }, [id]);
 
-  const addSong = async (songId: number) => {
+  const addSong = async (songId: number, silent = false) => {
     const res = await fetch(`/api/playlists/${id}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ song_id: songId }),
     });
-    if (res.ok) {
+    if (res.ok && !silent) {
       toast.success('Đã thêm bài hát');
       loadPlaylistSongs();
     }
@@ -54,12 +55,25 @@ export default function PlaylistPage({ params }: { params: Promise<{ id: string 
   };
 
   const availableSongs = allSongs.filter(s => !songs.find(ps => ps.id === s.id));
+  const filteredAvailable = availableSongs.filter(s => 
+    s.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    s.artist.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  const handleAddSelected = () => {
-    if (selectedSongId) {
-      addSong(parseInt(selectedSongId));
-      setSelectedSongId('');
+  const toggleSongSelection = (songId: number) => {
+    setSelectedSongIds(prev => 
+      prev.includes(songId) ? prev.filter(id => id !== songId) : [...prev, songId]
+    );
+  };
+
+  const handleAddSelected = async () => {
+    if (selectedSongIds.length === 0) return;
+    for (const songId of selectedSongIds) {
+      await addSong(songId, true);
     }
+    toast.success(`Đã thêm ${selectedSongIds.length} bài hát vào playlist`);
+    setSelectedSongIds([]);
+    loadPlaylistSongs();
   };
 
   return (
@@ -121,46 +135,63 @@ export default function PlaylistPage({ params }: { params: Promise<{ id: string 
           <Plus size={20} /> Thêm bài hát vào My playlist
         </h2>
         
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <select
-            value={selectedSongId}
-            onChange={(e) => setSelectedSongId(e.target.value)}
-            style={{
-              flex: 1,
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid var(--glass-border)',
-              borderRadius: '8px',
-              padding: '12px 16px',
-              color: 'white',
-              fontSize: '0.95rem',
-              outline: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            <option value="" style={{ color: 'black' }}>-- Chọn bài hát --</option>
-            {availableSongs.map(song => (
-              <option key={song.id} value={song.id} style={{ color: 'black' }}>
-                {song.title} - {song.artist}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={handleAddSelected}
-            disabled={!selectedSongId}
-            style={{
-              background: selectedSongId ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
-              color: selectedSongId ? 'black' : 'var(--text-muted)',
-              border: 'none',
-              padding: '0 24px',
-              borderRadius: '8px',
-              fontWeight: '700',
-              cursor: selectedSongId ? 'pointer' : 'not-allowed',
-              transition: 'var(--transition-smooth)'
-            }}
-          >
-            Thêm
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '12px 16px', border: '1px solid var(--glass-border)', marginBottom: '16px' }}>
+          <Search size={18} style={{ color: 'var(--text-muted)', marginRight: '12px' }} />
+          <input 
+            type="text" 
+            placeholder="Tìm kiếm để lọc bài hát..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ background: 'transparent', border: 'none', color: 'white', width: '100%', outline: 'none', fontSize: '0.95rem' }} 
+          />
         </div>
+
+        <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid var(--glass-border)', borderRadius: '12px', padding: '8px', background: 'rgba(0,0,0,0.2)' }}>
+          {filteredAvailable.map(song => (
+            <label 
+              key={song.id} 
+              style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '12px 16px', cursor: 'pointer', borderRadius: '8px', transition: 'background 0.2s', borderBottom: '1px solid rgba(255,255,255,0.02)' }} 
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} 
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              <input 
+                type="checkbox" 
+                checked={selectedSongIds.includes(song.id)}
+                onChange={() => toggleSongSelection(song.id)}
+                style={{ width: '18px', height: '18px', accentColor: 'var(--primary)', cursor: 'pointer' }}
+              />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: '600', fontSize: '1rem' }}>{song.title}</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{song.artist}</div>
+              </div>
+            </label>
+          ))}
+          {filteredAvailable.length === 0 && (
+            <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              Không còn bài hát nào để thêm.
+            </div>
+          )}
+        </div>
+
+        <button
+          onClick={handleAddSelected}
+          disabled={selectedSongIds.length === 0}
+          style={{
+            marginTop: '16px',
+            width: '100%',
+            padding: '14px',
+            borderRadius: '8px',
+            background: selectedSongIds.length > 0 ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
+            color: selectedSongIds.length > 0 ? 'black' : 'var(--text-muted)',
+            fontWeight: 'bold',
+            fontSize: '1rem',
+            border: 'none',
+            cursor: selectedSongIds.length > 0 ? 'pointer' : 'not-allowed',
+            transition: 'var(--transition-smooth)'
+          }}
+        >
+          Thêm {selectedSongIds.length > 0 ? `${selectedSongIds.length} bài hát` : ''} vào playlist
+        </button>
       </div>
     </div>
   );
