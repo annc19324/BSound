@@ -25,10 +25,10 @@ export default function HomeClient({ initialSongs }: { initialSongs: any[] }) {
         position: 'sticky', 
         top: 0, 
         zIndex: 100, 
-        background: 'rgba(0,0,0,0.8)', 
-        backdropFilter: 'blur(12px)',
-        padding: '16px 0',
-        marginBottom: '16px', 
+        background: '#000000', // matches app background to prevent overlap issues
+        paddingTop: '16px', // small padding to look good when scrolled
+        paddingBottom: '16px',
+        marginBottom: '16px',
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 

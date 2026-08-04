@@ -2,21 +2,62 @@
 
 import React, { useEffect, useState, use } from 'react';
 import { usePlayer } from '@/context/PlayerContext';
-import { Play, Music } from 'lucide-react';
+import { Play, Music, Trash2, Plus, Search } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function PlaylistPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [songs, setSongs] = useState<any[]>([]);
+  const [allSongs, setAllSongs] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [playlist, setPlaylist] = useState<any>(null);
   const { playSong } = usePlayer();
 
-  useEffect(() => {
+  const loadPlaylistSongs = () => {
     fetch(`/api/playlists/${id}`)
       .then(res => res.json())
       .then(data => setSongs(data));
-      
-    // Ideally we fetch playlist info too, but for now we just show name
+  };
+
+  useEffect(() => {
+    loadPlaylistSongs();
+    
+    // Fetch all available songs to add
+    fetch('/api/songs')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setAllSongs(data);
+      });
   }, [id]);
+
+  const addSong = async (songId: number) => {
+    const res = await fetch(`/api/playlists/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ song_id: songId }),
+    });
+    if (res.ok) {
+      toast.success('Đã thêm bài hát');
+      loadPlaylistSongs();
+    }
+  };
+
+  const removeSong = async (songId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const res = await fetch(`/api/playlists/${id}/songs/${songId}`, {
+      method: 'DELETE'
+    });
+    if (res.ok) {
+      toast.success('Đã xoá khỏi playlist');
+      loadPlaylistSongs();
+    }
+  };
+
+  const availableSongs = allSongs.filter(s => !songs.find(ps => ps.id === s.id));
+  const filteredAvailable = availableSongs.filter(s => 
+    s.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    s.artist.toLowerCase().includes(searchQuery.toLowerCase())
+  ).slice(0, 5); // Show top 5 results
 
   return (
     <div className="fade-in">
@@ -61,10 +102,51 @@ export default function PlaylistPage({ params }: { params: Promise<{ id: string 
               <div style={{ fontWeight: '600' }}>{song.title}</div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{song.artist}</div>
             </div>
-            <div style={{ color: 'var(--text-muted)' }}>3:45</div>
+            <button 
+              onClick={(e) => removeSong(song.id, e)}
+              style={{ color: '#ff4444', padding: '8px', background: 'transparent', border: 'none', cursor: 'pointer', opacity: 0.7 }}
+            >
+              <Trash2 size={18} />
+            </button>
           </div>
         ))}
-        {songs.length === 0 && <p>Chưa có bài hát nào trong playlist này.</p>}
+        {songs.length === 0 && <p style={{ color: 'var(--text-muted)' }}>Chưa có bài hát nào trong playlist này.</p>}
+      </div>
+
+      <div style={{ marginTop: '64px', borderTop: '1px solid var(--glass-border)', paddingTop: '32px' }}>
+        <h2 style={{ fontSize: '1.2rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Plus size={20} /> Thêm bài hát vào My playlist
+        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '12px 16px', border: '1px solid var(--glass-border)', marginBottom: '16px' }}>
+          <Search size={18} style={{ color: 'var(--text-muted)', marginRight: '12px' }} />
+          <input 
+            type="text" 
+            placeholder="Tìm kiếm bài hát..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ background: 'transparent', border: 'none', color: 'white', width: '100%', outline: 'none', fontSize: '0.95rem' }} 
+          />
+        </div>
+        
+        {searchQuery && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {filteredAvailable.map(song => (
+              <div key={song.id} style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: '600', fontSize: '0.95rem' }}>{song.title}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{song.artist}</div>
+                </div>
+                <button 
+                  onClick={() => addSong(song.id)}
+                  style={{ background: 'var(--primary)', color: 'black', border: 'none', padding: '6px 16px', borderRadius: '20px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer' }}
+                >
+                  Thêm
+                </button>
+              </div>
+            ))}
+            {filteredAvailable.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Không tìm thấy bài hát phù hợp.</p>}
+          </div>
+        )}
       </div>
     </div>
   );
